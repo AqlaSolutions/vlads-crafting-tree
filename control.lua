@@ -231,7 +231,7 @@ function identify(item, player, side)
 	
 	-- If there was only one recipe for making this item, then go ahead and show
 	-- it immediately
-	if #ingredient_in == 1 then
+	if #product_of > 0 then
 		show_recipe_details(product_of[1].name, player)
 	else
 		-- Otherwise, add an empty recipe frame so that things don't shift when it's used later
@@ -300,7 +300,7 @@ function show_recipe_details(recipe_name, player)
 
 	-- A generic function for adding an item to the list in the recipe pane
 
-	function add_sprite_and_label(add_to, thing_to_add, amount_mult, style, tooltip, sprite_dir, i, prefix)
+	function add_sprite_and_label(add_to, thing_to_add, amount_mult, style, tooltip, sprite_dir, i, prefix, hide_name)
 		if sprite_dir == "auto" then
 			if game.item_prototypes[thing_to_add.name] then
 				sprite_dir = "item"
@@ -312,7 +312,9 @@ function show_recipe_details(recipe_name, player)
 			end
 		end
 		local localised_name = thing_to_add.localised_name
-		if sprite_dir == "item" then
+		if hide_name then
+			localised_name = ""
+		elseif sprite_dir == "item" then
 			if game.item_prototypes[thing_to_add.name] then
 				localised_name = game.item_prototypes[thing_to_add.name].localised_name
 			else
@@ -335,7 +337,7 @@ function show_recipe_details(recipe_name, player)
         amount_mult = 1
       end
 			
-      caption = {"wiiuf_recipe_entry", math.ceil(get_amount(thing_to_add) * amount_mult), localised_name}
+      caption = {"wiiuf_recipe_entry", string.format("%4.0f", math.ceil(get_amount(thing_to_add) * amount_mult)), localised_name}
 		end
 		
 		-- In case the sprite does not exist we use pcall to catch the exception
@@ -355,7 +357,7 @@ function show_recipe_details(recipe_name, player)
 			label = table.add{
 				type="label", name="wiiuf_recipe_item_label_p_"..thing_to_add.name, caption=prefix,
 				single_line=false
-			}			
+			}
 			if style then
 				label.style = style
 			end
@@ -421,6 +423,8 @@ function show_recipe_details(recipe_name, player)
 	      end
 	    end
     end
+    -- uncomment to see all content
+    --no_dup_set[recipe.name] = nil
     return i
   end
 
