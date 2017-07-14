@@ -402,21 +402,14 @@ function show_recipe_details(recipe_name, player)
   	no_dup_set[recipe.name] = true
     local container = recipe_scroll.add{type="flow", name="wiiuf_recipe_depth_flow_"..tostring(i), direction="vertical"}
     depth = depth + 1
-    --log("ingredients of "..recipe.name)
-    for _, ingredient in pairs(recipe.ingredients) do
-    	--log("* "..ingredient.name)
-    	local padding = (depth - 1) * 15
-      add_sprite_and_label(container, ingredient, amount, nil, nil, "auto", i).style.left_padding = padding
+		for _, ingredient in pairs(recipe.ingredients) do
+      add_sprite_and_label(container, ingredient, amount, nil, nil, "auto", i).style.left_padding = (depth - 1) * 15
       i = i + 1
 			
 			local productToRecipeTable = { }
 			local n = 0
       if depth < 5 then
-        --container.add{ type="label", name="wiiuf_recipe_item_label_alt_"..tostring(i), caption=tostring(depth)..": before ingredient subscroll"}
-			  --i = i + 1
-      	sub_scroll = container--.add{type="flow", name="wiiuf_recipe_depth_flow_"..tostring(i), direction="vertical"}
-		    --sub_scroll.style.left_padding = 15
-		    --sub_scroll.add{ type="label", name="wiiuf_recipe_item_label_alt_"..tostring(i), caption=tostring(depth)..": inside ingredient subscroll"}
+        sub_scroll = container
 		    --i = i + 1
 	      local single_recipe = recipes[ingredient.name]
 	      local candidates = recipes
