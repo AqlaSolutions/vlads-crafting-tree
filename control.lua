@@ -324,9 +324,23 @@ function show_recipe_details(recipe_name, player)
 	recipe_scroll.style.minimal_width = section_width
 	recipe_scroll.style.maximal_width = section_width
 
+  function get_amount(thing)
+    if thing.amount then
+				return thing.amount
+			elseif thing.amount_min and thing.amount_max then
+				local expected_return = (thing.amount_min + thing.amount_max) / 2
+				if thing.probability then
+					expected_return = expected_return * thing.probability
+				end
+				return expected_return
+			else
+				return 0
+		end
+  end
+
 	-- A generic function for adding an item to the list in the recipe pane
 
-	function add_sprite_and_label(add_to, thing_to_add, with_amount, style, tooltip, sprite_dir, i)
+	function add_sprite_and_label(add_to, thing_to_add, amount_mult, style, tooltip, sprite_dir, i)
 		if sprite_dir == "auto" then
 			if game.item_prototypes[thing_to_add.name] then
 				sprite_dir = "item"
@@ -363,16 +377,12 @@ function show_recipe_details(recipe_name, player)
 			player.print("Sprite missing: "..sprite)
 		end
 		local caption = localised_name
-		if with_amount then
-			if thing_to_add.amount then
-				caption = {"wiiuf_recipe_entry", thing_to_add.amount, localised_name}
-			elseif thing_to_add.amount_min and thing_to_add.amount_max then
-				local expected_return = (thing_to_add.amount_min + thing_to_add.amount_max) / 2
-				if thing_to_add.probability then
-					expected_return = expected_return * thing_to_add.probability
-				end
-				caption = {"wiiuf_recipe_entry", expected_return, localised_name}
-			end
+		if amount_mult ~= false and amount_mult ~= nil then
+      if amount_mult == true then
+        amount_mult = 1
+      end
+			
+      caption = {"wiiuf_recipe_entry", math.ceil(get_amount(thing_to_add) * amount_mult), localised_name}
 		end
 		local label = table.add{
 			type="label", name="wiiuf_recipe_item_label_"..thing_to_add.name, caption=caption,
@@ -385,24 +395,71 @@ function show_recipe_details(recipe_name, player)
 		if tooltip then
 			label.tooltip = tooltip
 		end
+		return table
 	end
 
-  function add_single_recipe(recipe, recipe_scroll, depth, i) 
-    recipe_scroll = recipe_scroll.add{type="flow", name="wiiuf_recipe_depth_flow_"..tostring(i), direction="vertical"}
-    recipe_scroll.style.left_padding = depth * 30
+  function add_ingredients_recursively(recipe, amount, recipe_scroll, recipes, depth, i, no_dup_set) 
+  	no_dup_set[recipe.name] = true
+    local container = recipe_scroll.add{type="flow", name="wiiuf_recipe_depth_flow_"..tostring(i), direction="vertical"}
+    depth = depth + 1
+    --log("ingredients of "..recipe.name)
+    for _, ingredient in pairs(recipe.ingredients) do
+    	--log("* "..ingredient.name)
+    	local padding = (depth - 1) * 15
+      add_sprite_and_label(container, ingredient, amount, nil, nil, "auto", i).style.left_padding = padding
+      i = i + 1
+			
+			local productToRecipeTable = { }
+			local n = 0
+      if depth < 5 then
+        --container.add{ type="label", name="wiiuf_recipe_item_label_alt_"..tostring(i), caption=tostring(depth)..": before ingredient subscroll"}
+			  --i = i + 1
+      	sub_scroll = container--.add{type="flow", name="wiiuf_recipe_depth_flow_"..tostring(i), direction="vertical"}
+		    --sub_scroll.style.left_padding = 15
+		    --sub_scroll.add{ type="label", name="wiiuf_recipe_item_label_alt_"..tostring(i), caption=tostring(depth)..": inside ingredient subscroll"}
+		    --i = i + 1
+	      local single_recipe = recipes[ingredient.name]
+	      local candidates = recipes
+	      local n = 0
+	      if single_recipe~=nil then
+	      	candidates = { [ingredient.name] = single_recipe }
+	      end
+	      for _, r in pairs(candidates) do
+	      	if (string.sub(r.name, -string.len("-barrel"))~="-barrel") and (no_dup_set[r.name] == nil) then
+		      	for _, p in pairs(r.products) do
+			      	if p.name == ingredient.name then
+			      		productToRecipeTable[p] = r
+			      		n = n + 1
+			    	    break
+							end
+						end
+					end
+	      end
+	      local d = depth
+	      if n > 1 then
+	      	d = d + 1	      	
+	      end
+	      for p,r in pairs(productToRecipeTable) do
+	      	if n > 1 then
+	      		local flow = sub_scroll.add{type="flow", name="wiiuf_recipe_item_label_alt_flow_"..tostring(i), direction="horizontal"}
+	      		i = i + 1
+	      		flow.add{ type="label", name="wiiuf_recipe_item_label_alt_"..tostring(i), caption="? "}.style.left_padding = depth * 15
+	      		i = i + 1
+	      		flow.add{ type="label", name="wiiuf_recipe_item_label_alt_"..tostring(i), caption=r.localised_name}	      		
+	      		i = i + 1
+	      	end
+	      	i = add_ingredients_recursively(r, amount * ingredient.amount / p.amount, sub_scroll, recipes, d, i, no_dup_set)	      				    	    
+	      end
+	    end
+    end
+    return i
+  end
+
+  function add_single_recipe(recipe, recipe_scroll, recipes, depth, i) 
     add_sprite_and_label(recipe_scroll, recipe, false, nil, nil, "recipe", i)
     i = i + 1
-    -- First add ingredients
-    recipe_scroll.add{
-      type="label", name="wiiuf_recipe_ingredients_heading"..tostring(i), caption={"wiiuf_recipe_ingredients_heading"},
-      style="bold_label_style"
-    }
-    for _, ingredient in pairs(recipe.ingredients) do
-      add_sprite_and_label(recipe_scroll, ingredient, true, nil, nil, "auto", i)
-      i = i + 1
-    end
-
-    -- Next add products
+        
+    -- First add products
     recipe_scroll.add{
       type="label", name="wiiuf_recipe_products_heading"..tostring(i), caption={"wiiuf_recipe_products_heading"},
       style="bold_label_style"
@@ -411,7 +468,14 @@ function show_recipe_details(recipe_name, player)
       add_sprite_and_label(recipe_scroll, product, true, nil, nil, "auto", i)
       i = i + 1
     end
-
+    
+    -- First add ingredients
+    recipe_scroll.add{
+      type="label", name="wiiuf_recipe_ingredients_heading"..tostring(i), caption={"wiiuf_recipe_ingredients_heading"},
+      style="bold_label_style"
+    }
+    add_ingredients_recursively(recipe, 1, recipe_scroll, recipes, depth, i, { }) 
+    
     -- Finally add machines
     recipe_scroll.add{
       type="label", name="wiiuf_recipe_machines_heading"..tostring(i), caption={"wiiuf_recipe_machines_heading"},
@@ -447,26 +511,7 @@ function show_recipe_details(recipe_name, player)
     return i
   end
 
-  function add_recipe_recursively(recipe, recipe_scroll, recipes, depth, i) 
-    depth = depth + 1
-    --log("add_recipe_recursively, i="..tostring(i)..", recipe="..tostring(recipe_scroll)..", ".."all="..tostring(recipes))
-    for _, ingredient in pairs(recipe.ingredients) do
-      log("ingredient "..ingredient.name)
-      local r = recipes[ingredient.name]
-      if (r ~= nil) then
-        i = add_single_recipe(recipes[ingredient.name], recipe_scroll, depth, i)
-      end
-    end
-    for _, ingredient in pairs(recipe.ingredients) do
-      local r = recipes[ingredient.name]
-      if (r ~= nil) then
-        i = add_recipe_recursively(r, recipe_scroll, recipes, depth, i)
-      end
-    end
-    return i
-  end
-
-  add_recipe_recursively(recipe, recipe_scroll, player.force.recipes, 0, add_single_recipe(recipe, recipe_scroll, 0, 0), 0);
+  add_single_recipe(recipe, recipe_scroll, player.force.recipes, 0, 0);
 end
 
 function minimise(item, player, from_side)
