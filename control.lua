@@ -67,9 +67,12 @@ end
 function add_recipe_to_list(recipe, table, player)
 	local from_research = recipe.enabled or find_technology(recipe.name, player)
 	if from_research then
-		table.add{type="sprite", name="wiiuf_recipe_sprite_"..recipe.name, sprite="recipe/"..recipe.name}
+		local caption = recipe.localised_name
+		table.add{type="sprite", name="wiiuf_recipe_sprite_"..recipe.name, sprite="recipe/"..recipe.name, tooltip = caption}
+		-- no label but still it's a table so should add even empty
+		caption = ""
 		local label = table.add{
-			type="label", name="wiiuf_recipe_label_"..recipe.name, caption=recipe.localised_name,
+			type="label", name="wiiuf_recipe_label_"..recipe.name, caption=caption,
 			single_line=false
 		}
 		label.style.minimal_height = 39
@@ -138,10 +141,10 @@ function identify(item, player, side)
 		end
 	end
 	
-	local table_height = 350
+	local table_height = 700
 	if side then table_height = 250 end
 
-	local section_width = 300
+	local section_width = 50
 	
 	-- GUI stuff
 	if player.gui.center.wiiuf_center_frame then player.gui.center.wiiuf_center_frame.destroy() end
@@ -209,8 +212,11 @@ function identify(item, player, side)
 		mined_scroll.style.maximal_height = table_height
 		local mined_table = mined_scroll.add{type = "table", name = "wiiuf_mined_table", colspan = 2}
 		for i, entity in pairs(mined_from) do
-			mined_table.add{type = "sprite", name = "wiiuf_sprite_" .. i, sprite = "entity/"..entity.name}
-			local label = mined_table.add{type = "label", name = "wiiuf_label_" .. i, caption = entity.localised_name}
+			local caption = entity.localised_name
+			mined_table.add{type = "sprite", name = "wiiuf_sprite_" .. i, sprite = "entity/"..entity.name, tooltip = caption}
+			-- no label, only icon and a tooltip
+			caption = ""
+			local label = mined_table.add{type = "label", name = "wiiuf_label_" .. i, caption = caption}
 			label.style.minimal_height = 34
 		end
 	end
@@ -226,6 +232,7 @@ function identify(item, player, side)
 			local label = looted_table.add{type = "label", name = "wiiuf_label_" .. i, caption = entity.localised_name}
 			label.style.minimal_height = 34
 		end
+		set_scroll_dimensions(looted_scroll)
 	end
 
 	function set_scroll_dimensions(scroll)
@@ -312,8 +319,8 @@ function show_recipe_details(recipe_name, player)
 
 	-- TODO: table_height and section_width should probably be globals, and
 	-- maybe configurable
-	local table_height = 600
-	local section_width = 200
+	local table_height = 700
+	local section_width = 1000
 
 	local recipe_frame = body_flow.add{
 		type="frame", name="wiiuf_recipe_frame", caption={"wiiuf_recipe_details"}
@@ -321,8 +328,8 @@ function show_recipe_details(recipe_name, player)
 	local recipe_scroll = recipe_frame.add{type="scroll-pane", name="wiiuf_recipe_scroll"}
 	recipe_scroll.style.minimal_height = table_height
 	recipe_scroll.style.maximal_height = table_height
-	recipe_scroll.style.minimal_width = 700
-	recipe_scroll.style.maximal_width = 700
+	recipe_scroll.style.minimal_width = section_width
+	recipe_scroll.style.maximal_width = section_width
 
   function get_amount(thing)
     if thing.amount then
@@ -369,18 +376,6 @@ function show_recipe_details(recipe_name, player)
 		end
 		local table = add_to.add{type="table", name="wiiuf_recipe_table_"..tostring(i), colspan=colspan}
 		
-		-- In case the sprite does not exist we use pcall to catch the exception
-		-- and don't have a sprite (thanks to Helfima/Helmod for the trick).
-		local sprite = sprite_dir.."/"..thing_to_add.name
-		local sprite_options = {
-			type="sprite", name="wiiuf_recipe_item_sprite_"..thing_to_add.name, sprite=sprite
-		}
-		local ok, error = pcall(function()
-			table.add(sprite_options)
-		end)
-		if not(ok) then
-			player.print("Sprite missing: "..sprite)
-		end
 		local caption = localised_name
 		if amount_mult ~= false and amount_mult ~= nil then
       if amount_mult == true then
@@ -388,6 +383,19 @@ function show_recipe_details(recipe_name, player)
       end
 			
       caption = {"wiiuf_recipe_entry", math.ceil(get_amount(thing_to_add) * amount_mult), localised_name}
+		end
+		
+		-- In case the sprite does not exist we use pcall to catch the exception
+		-- and don't have a sprite (thanks to Helfima/Helmod for the trick).
+		local sprite = sprite_dir.."/"..thing_to_add.name
+		local sprite_options = {
+			type="sprite", name="wiiuf_recipe_item_sprite_"..thing_to_add.name, sprite=sprite, tooltip = caption
+		}
+		local ok, error = pcall(function()
+			table.add(sprite_options)
+		end)
+		if not(ok) then
+			player.print("Sprite missing: "..sprite)
 		end
 		local label = nil
 		if prefix then
@@ -399,16 +407,18 @@ function show_recipe_details(recipe_name, player)
 				label.style = style
 			end
 		end
-		label = table.add{
-			type="label", name="wiiuf_recipe_item_label_"..thing_to_add.name, caption=caption,
-			single_line=false
-		}
-		if style then
-			label.style = style
-		end
-		label.style.maximal_width = 249
-		if tooltip then
-			label.tooltip = tooltip
+		if tooltip ~= true then
+			label = table.add{
+				type="label", name="wiiuf_recipe_item_label_"..thing_to_add.name, caption=caption,
+				single_line=false
+			}
+			if style then
+				label.style = style
+			end
+			label.style.maximal_width = 249
+			if tooltip then
+				label.tooltip = tooltip
+			end
 		end
 		return table
 	end
@@ -416,15 +426,19 @@ function show_recipe_details(recipe_name, player)
   function add_ingredients_recursively(recipe, amount, recipe_scroll, recipes, depth, i, no_dup_set) 
   	no_dup_set[recipe.name] = true
     local container = recipe_scroll.add{type="flow", name="wiiuf_recipe_depth_flow_"..tostring(i), direction="vertical"}
+    if depth == 0 then
+    	container.direction = "horizontal"
+    end
     depth = depth + 1
 		for _, ingredient in pairs(recipe.ingredients) do
-      add_sprite_and_label(container, ingredient, amount, nil, nil, "auto", i).style.left_padding = (depth - 1) * 15
+			local ingredient_container = container.add{type="flow", name="wiiuf_recipe_depth_flow_"..tostring(i), direction="vertical"}
+      add_sprite_and_label(ingredient_container, ingredient, amount, nil, nil, "auto", i).style.left_padding = (depth - 1) * 15
       i = i + 1
 			
 			local productToRecipeTable = { }
 			local n = 0
       if depth < 5 then
-        sub_scroll = container
+        sub_scroll = ingredient_container
 		    --i = i + 1
 	      local single_recipe = recipes[ingredient.name]
 	      local candidates = recipes
