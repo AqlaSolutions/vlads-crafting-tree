@@ -349,7 +349,7 @@ function show_recipe_details(recipe_name, player)
 		elseif sprite_dir == "fluid" then
 			localised_name = game.fluid_prototypes[thing_to_add.name].localised_name
 		end
-		local table = add_to.add{type="table", name="wiiuf_recipe_table_"..i, colspan=2}
+		local table = add_to.add{type="table", name="wiiuf_recipe_table_"..tostring(i), colspan=2}
 		-- In case the sprite does not exist we use pcall to catch the exception
 		-- and don't have a sprite (thanks to Helfima/Helmod for the trick).
 		local sprite = sprite_dir.."/"..thing_to_add.name
@@ -387,7 +387,9 @@ function show_recipe_details(recipe_name, player)
 		end
 	end
 
-  function add_single_recipe(recipe, recipe_scroll, i) 
+  function add_single_recipe(recipe, recipe_scroll, depth, i) 
+    recipe_scroll = recipe_scroll.add{type="flow", name="wiiuf_recipe_depth_flow_"..tostring(i), direction="vertical"}
+    recipe_scroll.style.left_padding = depth * 30
     add_sprite_and_label(recipe_scroll, recipe, false, nil, nil, "recipe", i)
     i = i + 1
     -- First add ingredients
@@ -445,25 +447,26 @@ function show_recipe_details(recipe_name, player)
     return i
   end
 
-  function add_recipe_recursively(recipe, recipe_scroll, recipes, i) 
+  function add_recipe_recursively(recipe, recipe_scroll, recipes, depth, i) 
+    depth = depth + 1
     --log("add_recipe_recursively, i="..tostring(i)..", recipe="..tostring(recipe_scroll)..", ".."all="..tostring(recipes))
     for _, ingredient in pairs(recipe.ingredients) do
       log("ingredient "..ingredient.name)
       local r = recipes[ingredient.name]
       if (r ~= nil) then
-        i = add_single_recipe(recipes[ingredient.name], recipe_scroll, i)
+        i = add_single_recipe(recipes[ingredient.name], recipe_scroll, depth, i)
       end
     end
     for _, ingredient in pairs(recipe.ingredients) do
       local r = recipes[ingredient.name]
       if (r ~= nil) then
-        i = add_recipe_recursively(r, recipe_scroll, recipes, i)
+        i = add_recipe_recursively(r, recipe_scroll, recipes, depth, i)
       end
     end
     return i
   end
 
-  add_recipe_recursively(recipe, recipe_scroll, player.force.recipes, add_single_recipe(recipe, recipe_scroll, 0));
+  add_recipe_recursively(recipe, recipe_scroll, player.force.recipes, 0, add_single_recipe(recipe, recipe_scroll, 0, 0), 0);
 end
 
 function minimise(item, player, from_side)
