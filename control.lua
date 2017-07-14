@@ -1,5 +1,10 @@
 require("mod-gui")
 
+side_width = 1000
+side_min_width = 240
+side_height = 250
+tree_padding = 22
+
 SHOW_ALL = false	-- Set to true to also display disabled recipes and recipes without technology.
 
 function find_technology(recipe, player)
@@ -74,6 +79,9 @@ function add_recipe_to_list(recipe, add_to, player)
 	end
 end
 
+last_item = nil
+last_recipe_name = nil
+
 function identify(item, player, side)
 	-- If it's not actually an item, do nothing
 	-- This can happen if you click the recipe name on the recipe pane
@@ -125,12 +133,7 @@ function identify(item, player, side)
 			end
 		end
 	end
-	
-	local table_height = 700
-	if side then table_height = 250 end
-
-	local section_width = 50
-	
+		
 	-- GUI stuff
 	if player.gui.center.wiiuf_center_frame then player.gui.center.wiiuf_center_frame.destroy() end
 	local mod_frame_flow = mod_gui.get_frame_flow(player)
@@ -150,7 +153,8 @@ function identify(item, player, side)
 	
 	-- Title flow
 	local title_flow = main_frame.add{type = "flow", name = "wiiuf_title_flow", direction = "horizontal"}
-
+	title_flow.style.minimal_width = side_min_width
+	
 	local sprite = "questionmark"
 	local localised_name = item
 	if game.item_prototypes[item] then
@@ -178,12 +182,19 @@ function identify(item, player, side)
 	end
 	title_flow.add{type = "sprite-button", name = "wiiuf_close", sprite = "close", style = button_style, tooltip = {"close"}}
 
+	
 	-- Body flow
 	local body_flow = {}
 	if side then
 		local body_scroll = main_frame.add{type = "scroll-pane", name = "wiiuf_body_scroll"}
-		body_scroll.style.maximal_width = 250
-		body_scroll.vertical_scroll_policy = "never"
+		body_scroll.style.maximal_width = side_width
+		body_scroll.style.minimal_width = side_min_width
+		body_scroll.style.maximal_height = side_height
+		main_frame.style.maximal_width = side_width
+		main_frame.style.maximal_height = side_height + 50
+		main_frame.style.minimal_width = side_min_width
+		
+		--body_scroll.vertical_scroll_policy = "never"
 		body_flow = body_scroll.add{type = "flow", name = "wiiuf_body_flow", direction = "vertical", style = "achievements_flow_style"}
 	else
 		body_flow = main_frame.add{type = "flow", name = "wiiuf_body_flow", direction = "vertical", style = "achievements_flow_style"}
@@ -192,11 +203,16 @@ function identify(item, player, side)
 	end
 
 	
+	
   if not side then
   
 		function set_scroll_dimensions(scroll)
 				scroll.style.minimal_width = 1000
 				scroll.style.maximal_width = 1000
+				if side then
+					scroll.style.minimal_width = side_width
+					scroll.style.maximal_width = side_width
+				end
 		end
 		
 		function setup_area(name, title, hashtable, add_func)
@@ -229,11 +245,14 @@ function identify(item, player, side)
 			end)
 	end
 	
+	if item == last_item and last_recipe_name ~= nil then
+		show_recipe_details(last_recipe_name, player, side) -- restore last
 	-- If there was only one recipe for making this item, then go ahead and show
 	-- it immediately
-	if #product_of > 0 then
-		show_recipe_details(product_of[1].name, player)
+	elseif #product_of > 0 then
+		show_recipe_details(product_of[1].name, player, side)
 	else
+		last_recipe_name = nil
 		-- Otherwise, add an empty recipe frame so that things don't shift when it's used later
 		local recipe_frame = body_flow.add{
 			type="frame", name="wiiuf_recipe_frame", caption={"wiiuf_recipe_details"}
@@ -245,11 +264,12 @@ function identify(item, player, side)
 		}
 		label.style.maximal_width = 249
 	end
+	last_item = item
 end
 
-function show_recipe_details(recipe_name, player)
+function show_recipe_details(recipe_name, player, side)
+	last_recipe_name = recipe_name
 	local recipe = player.force.recipes[recipe_name]
-
 	local main_frame = player.gui.center.wiiuf_center_frame
 	if not main_frame then
 		main_frame = mod_gui.get_frame_flow(player).wiiuf_left_frame
@@ -275,14 +295,19 @@ function show_recipe_details(recipe_name, player)
 	local table_height = 700
 	local section_width = 1000
 
-	local recipe_frame = body_flow.add{
-		type="frame", name="wiiuf_recipe_frame", caption={"wiiuf_recipe_details"}
-	}
-	local recipe_scroll = recipe_frame.add{type="scroll-pane", name="wiiuf_recipe_scroll"}
-	recipe_scroll.style.minimal_height = table_height
-	recipe_scroll.style.maximal_height = table_height
-	recipe_scroll.style.minimal_width = section_width
-	recipe_scroll.style.maximal_width = section_width
+	local recipe_scroll = nil
+	if not side then
+		local recipe_frame = body_flow.add{
+			type="frame", name="wiiuf_recipe_frame", caption={"wiiuf_recipe_details"}
+		}
+		recipe_scroll = recipe_frame.add{type="scroll-pane", name="wiiuf_recipe_scroll"}
+		recipe_scroll.style.minimal_height = table_height
+		recipe_scroll.style.maximal_height = table_height
+		recipe_scroll.style.minimal_width = section_width
+		recipe_scroll.style.maximal_width = section_width
+	else
+		recipe_scroll = body_flow
+	end
 
   function get_amount(thing)
     if thing.amount then
@@ -312,9 +337,7 @@ function show_recipe_details(recipe_name, player)
 			end
 		end
 		local localised_name = thing_to_add.localised_name
-		if hide_name then
-			localised_name = ""
-		elseif sprite_dir == "item" then
+		if sprite_dir == "item" then
 			if game.item_prototypes[thing_to_add.name] then
 				localised_name = game.item_prototypes[thing_to_add.name].localised_name
 			else
@@ -324,6 +347,12 @@ function show_recipe_details(recipe_name, player)
 			end
 		elseif sprite_dir == "fluid" then
 			localised_name = game.fluid_prototypes[thing_to_add.name].localised_name
+		end
+		if hide_name then
+			if not tooltip then
+				tooltip = localised_name
+			end
+			localised_name = ""
 		end
 		local colspan = 2
 		if prefix then
@@ -376,7 +405,7 @@ function show_recipe_details(recipe_name, player)
 		return table
 	end
 
-  function add_ingredients_recursively(recipe, amount, recipe_scroll, recipes, depth, i, no_dup_set) 
+  function add_ingredients_recursively(recipe, amount, recipe_scroll, recipes, depth, i, no_dup_set, side) 
   	no_dup_set[recipe.name] = true
     local container = recipe_scroll.add{type="flow", name="wiiuf_recipe_depth_flow_"..tostring(i), direction="vertical"}
     if depth == 0 then
@@ -385,7 +414,7 @@ function show_recipe_details(recipe_name, player)
     depth = depth + 1
 		for _, ingredient in pairs(recipe.ingredients) do
 			local ingredient_container = container.add{type="flow", name="wiiuf_recipe_depth_flow_"..tostring(i), direction="vertical"}
-      add_sprite_and_label(ingredient_container, ingredient, amount, nil, nil, "auto", i).style.left_padding = (depth - 1) * 15
+      add_sprite_and_label(ingredient_container, ingredient, amount, nil, nil, "auto", i, nil, side).style.left_padding = (depth - 1) * tree_padding
       i = i + 1
 			
 			local productToRecipeTable = { }
@@ -417,9 +446,9 @@ function show_recipe_details(recipe_name, player)
 	      for p,r in pairs(productToRecipeTable) do
 	      	local p_amount = amount * ingredient.amount / p.amount
 	      	if n > 1 then
-	      		add_sprite_and_label(sub_scroll, r, false, nil, nil, "recipe", i, 'R: ' .. math.ceil(p_amount)).style.left_padding = depth * 15	      		
+	      		add_sprite_and_label(sub_scroll, r, false, nil, nil, "recipe", i, 'R: ' .. math.ceil(p_amount), side).style.left_padding = depth * tree_padding
 	      	end
-	      	i = add_ingredients_recursively(r, p_amount, sub_scroll, recipes, d, i, no_dup_set)	      				    	    
+	      	i = add_ingredients_recursively(r, p_amount, sub_scroll, recipes, d, i, no_dup_set, side)	      				    	    
 	      end
 	    end
     end
@@ -428,63 +457,69 @@ function show_recipe_details(recipe_name, player)
     return i
   end
 
-  function add_single_recipe(recipe, recipe_scroll, recipes, depth, i) 
-    add_sprite_and_label(recipe_scroll, recipe, false, nil, nil, "recipe", i)
-    i = i + 1
-        
-    -- First add products
-    recipe_scroll.add{
-      type="label", name="wiiuf_recipe_products_heading"..tostring(i), caption={"wiiuf_recipe_products_heading"},
-      style="bold_label_style"
-    }
+  function add_single_recipe(recipe, recipe_scroll, recipes, depth, i, side) 
+    if not side then
+	    add_sprite_and_label(recipe_scroll, recipe, false, nil, nil, "recipe", i)
+	    i = i + 1
+           
+	    -- First add products
+	    recipe_scroll.add{
+	      type="label", name="wiiuf_recipe_products_heading"..tostring(i), caption={"wiiuf_recipe_products_heading"},
+	      style="bold_label_style"
+	    }
+    end
     for _, product in pairs(recipe.products) do
       add_sprite_and_label(recipe_scroll, product, true, nil, nil, "auto", i)
       i = i + 1
     end
     
-    -- First add ingredients
-    recipe_scroll.add{
-      type="label", name="wiiuf_recipe_ingredients_heading"..tostring(i), caption={"wiiuf_recipe_ingredients_heading"},
-      style="bold_label_style"
-    }
-    add_ingredients_recursively(recipe, 1, recipe_scroll, recipes, depth, i, { }) 
+    -- add ingredients
+    if not side then
+	    recipe_scroll.add{
+	      type="label", name="wiiuf_recipe_ingredients_heading"..tostring(i), caption={"wiiuf_recipe_ingredients_heading"},
+	      style="bold_label_style"
+	    }
+    end
+    add_ingredients_recursively(recipe, 1, recipe_scroll, recipes, depth, i, { }, side) 
     
-    -- Finally add machines
-    recipe_scroll.add{
-      type="label", name="wiiuf_recipe_machines_heading"..tostring(i), caption={"wiiuf_recipe_machines_heading"},
-      style="bold_label_style"
-    }
-    local machines = get_machines_for_recipe(recipe, player)
-    -- Figure out which machines are available at current tech
-    local machine_unlocks = {}
-    for name, recipe in pairs(player.force.recipes) do
-      for _, product in pairs(recipe.products) do
-        if machines[product.name] then
-          if recipe.enabled then
-            machine_unlocks[product.name] = "already_unlocked"
-          else
-            machine_unlocks[product.name] = find_technology(recipe.name, player)
-          end
-        end
-      end
-    end
-    for _, machine in pairs(machines) do
-      local unlock = machine_unlocks[machine.name]
-      if unlock then
-        local tooltip = nil
-        local style = nil
-        if unlock ~= "already_unlocked" then
-          style = "invalid_label_style"
-          tooltip = {"behind_research", unlock}
-        end
-        add_sprite_and_label(recipe_scroll, machine, false, style, tooltip, "item", i)
-        i = i + 1
-      end
-    end
+    if not side then
+	    -- Finally add machines
+	    recipe_scroll.add{
+	      type="label", name="wiiuf_recipe_machines_heading"..tostring(i), caption={"wiiuf_recipe_machines_heading"},
+	      style="bold_label_style"
+	    }
+	    local machines = get_machines_for_recipe(recipe, player)
+	    -- Figure out which machines are available at current tech
+	    local machine_unlocks = {}
+	    for name, recipe in pairs(player.force.recipes) do
+	      for _, product in pairs(recipe.products) do
+	        if machines[product.name] then
+	          if recipe.enabled then
+	            machine_unlocks[product.name] = "already_unlocked"
+	          else
+	            machine_unlocks[product.name] = find_technology(recipe.name, player)
+	          end
+	        end
+	      end
+	    end
+	    for _, machine in pairs(machines) do
+	      local unlock = machine_unlocks[machine.name]
+	      if unlock then
+	        local tooltip = nil
+	        local style = nil
+	        if unlock ~= "already_unlocked" then
+	          style = "invalid_label_style"
+	          tooltip = {"behind_research", unlock}
+	        end
+	        add_sprite_and_label(recipe_scroll, machine, false, style, tooltip, "item", i)
+	        i = i + 1
+	      end
+	    end
+	  end
     return i
   end
 
-  add_single_recipe(recipe, recipe_scroll, player.force.recipes, 0, 0);
+  add_single_recipe(recipe, recipe_scroll, player.force.recipes, 0, 0, side);
 end
 
 function minimise(item, player, from_side)
