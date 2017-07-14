@@ -2,7 +2,7 @@ data:extend({
   {
     type = "sprite",
     name = "looking-glass",
-	filename = "__what-is-it-really-used-for__/graphics/search-icon.png",
+	filename = "__vlads-crafting-tree__/graphics/search-icon.png",
 	priority = "extra-high-no-scale",
 	width = 300,
 	height = 300,
@@ -29,7 +29,7 @@ data:extend({
   {
     type = "sprite",
     name = "arrow-left",
-	filename = "__what-is-it-really-used-for__/graphics/arrow_left.png",
+	filename = "__vlads-crafting-tree__/graphics/arrow_left.png",
 	priority = "extra-high-no-scale",
 	width = 32,
 	height = 32,
@@ -38,7 +38,7 @@ data:extend({
   {
     type = "sprite",
     name = "arrow-bar",
-	filename = "__what-is-it-really-used-for__/graphics/arrow_bar.png",
+	filename = "__vlads-crafting-tree__/graphics/arrow_bar.png",
 	priority = "extra-high-no-scale",
 	width = 32,
 	height = 32,
@@ -47,7 +47,7 @@ data:extend({
   {
     type = "sprite",
     name = "close",
-	filename = "__what-is-it-really-used-for__/graphics/close.png",
+	filename = "__vlads-crafting-tree__/graphics/close.png",
 	priority = "extra-high-no-scale",
 	width = 64,
 	height = 64,
