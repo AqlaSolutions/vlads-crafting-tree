@@ -64,25 +64,10 @@ function sort_recipes(recipes, player)
 	table.sort(recipes, compare)
 end
 
-function add_recipe_to_list(recipe, table, player)
+function add_recipe_to_list(recipe, add_to, player)
 	local from_research = recipe.enabled or find_technology(recipe.name, player)
 	if from_research then
-		local caption = recipe.localised_name
-		table.add{type="sprite", name="wiiuf_recipe_sprite_"..recipe.name, sprite="recipe/"..recipe.name, tooltip = caption}
-		-- no label but still it's a table so should add even empty
-		caption = ""
-		local label = table.add{
-			type="label", name="wiiuf_recipe_label_"..recipe.name, caption=caption,
-			single_line=false
-		}
-		label.style.minimal_height = 39
-		label.style.maximal_width = 249
-		if not recipe.enabled then
-			label.style = "invalid_label_style"
-			label.tooltip = {"behind_research", from_research}
-		elseif recipe.hidden then
-			label.style = "wiiuf_hidden_label_style"
-		end
+		add_to.add{type="sprite", name="wiiuf_recipe_sprite_"..recipe.name, sprite="recipe/"..recipe.name, tooltip = recipe.localised_name}
 		return true
 	else
 		return false
@@ -199,88 +184,56 @@ function identify(item, player, side)
 		local body_scroll = main_frame.add{type = "scroll-pane", name = "wiiuf_body_scroll"}
 		body_scroll.style.maximal_width = 250
 		body_scroll.vertical_scroll_policy = "never"
-		body_flow = body_scroll.add{type = "flow", name = "wiiuf_body_flow", direction = "horizontal", style = "achievements_flow_style"}
+		body_flow = body_scroll.add{type = "flow", name = "wiiuf_body_flow", direction = "vertical", style = "achievements_flow_style"}
 	else
-		body_flow = main_frame.add{type = "flow", name = "wiiuf_body_flow", direction = "horizontal", style = "achievements_flow_style"}
+		body_flow = main_frame.add{type = "flow", name = "wiiuf_body_flow", direction = "vertical", style = "achievements_flow_style"}
+		body_flow.style.maximal_height = 1000
+		body_flow.style.minimal_height = 1000
 	end
 
-	-- mined from
-	if #mined_from > 0 then
-		local mined_frame = body_flow.add{type = "frame", name = "wiiuf_mined_frame", caption = {"mined_from"}}
-		local mined_scroll = mined_frame.add{type = "scroll-pane", name = "wiiuf_mined_scroll"}
-		mined_scroll.style.minimal_height = table_height
-		mined_scroll.style.maximal_height = table_height
-		local mined_table = mined_scroll.add{type = "table", name = "wiiuf_mined_table", colspan = 2}
-		for i, entity in pairs(mined_from) do
-			local caption = entity.localised_name
-			mined_table.add{type = "sprite", name = "wiiuf_sprite_" .. i, sprite = "entity/"..entity.name, tooltip = caption}
-			-- no label, only icon and a tooltip
-			caption = ""
-			local label = mined_table.add{type = "label", name = "wiiuf_label_" .. i, caption = caption}
-			label.style.minimal_height = 34
+	
+  if not side then
+  
+		function set_scroll_dimensions(scroll)
+				scroll.style.minimal_width = 1000
+				scroll.style.maximal_width = 1000
 		end
-	end
-	-- looted from
-	if #looted_from > 0 then
-		local looted_frame = body_flow.add{type = "frame", name = "wiiuf_looted_frame", caption = {"looted_from"}}
-		local looted_scroll = looted_frame.add{type = "scroll-pane", name = "wiiuf_looted_scroll"}
-		looted_scroll.style.minimal_height = table_height
-		looted_scroll.style.maximal_height = table_height
-		local looted_table = looted_scroll.add{type = "table", name = "wiiuf_looted_table", colspan = 2}
-		for i, entity in pairs(looted_from) do
-			looted_table.add{type = "sprite", name = "wiiuf_sprite_" .. i, sprite = "entity/"..entity.name}
-			local label = looted_table.add{type = "label", name = "wiiuf_label_" .. i, caption = entity.localised_name}
-			label.style.minimal_height = 34
+		
+		function setup_area(name, title, hashtable, add_func)
+			local mined_frame = body_flow.add{type = "frame", name = "wiiuf_"..name.."_frame", caption = {title}}
+			local mined_scroll = mined_frame.add{type = "scroll-pane", name = "wiiuf_"..name.."_scroll"}
+			set_scroll_dimensions(mined_scroll)
+			mined_scroll = mined_scroll.add{type = "flow", name = "wiiuf_"..name.."_scroll_flow", direction = "horizontal"}
+			for i, entity in pairs(hashtable) do
+				if not add_func then
+					mined_scroll.add{type = "sprite", name = "wiiuf_sprite_" .. i, sprite = "entity/"..entity.name, tooltip = entity.localised_name}
+				else
+					add_func(entity,mined_scroll)
+				end
+			end
+			return mined_scroll
 		end
-		set_scroll_dimensions(looted_scroll)
-	end
-
-	function set_scroll_dimensions(scroll)
-		scroll.style.minimal_height = table_height
-		scroll.style.maximal_height = table_height
-		if not side then
-			scroll.style.minimal_width = section_width
-			scroll.style.maximal_width = section_width
-		end
-	end
-
-	-- ingredient in
-	local ingredient_frame = body_flow.add{type = "frame", name = "wiiuf_ingredient_frame", caption = {"ingredient_in"}}
-	local ingredient_scroll = ingredient_frame.add{type = "scroll-pane", name = "wiiuf_ingredient_scroll"}
-	set_scroll_dimensions(ingredient_scroll)
-	local ingredient_table = ingredient_scroll.add{type = "table", name = "wiiuf_ingredient_table", colspan = 2}
-	local is_ingredient = false
-	for i, recipe in pairs(ingredient_in) do
-		if add_recipe_to_list(recipe, ingredient_table, player) then
-			is_ingredient = true
-		end
+		setup_area("mined", "mined_from", mined_from)
+		setup_area("looted", "looted_from", looted_from)
+		setup_area("ingredient", "ingredient_in", ingredient_in, 
+			function(recipe,ingredient_scroll)
+				add_recipe_to_list(recipe, ingredient_scroll, player) 
+			end)
+		
+		local num_product_recipes = 0
+		setup_area("product", "product_of", product_of, 
+			function(product,product_scroll) 
+				if add_recipe_to_list(product, product_scroll, player) then
+					num_product_recipes = num_product_recipes + 1
+				end
+			end)
 	end
 	
-	if side and not is_ingredient then
-		ingredient_frame.destroy()
-	end
-
-	-- product of
-	local product_frame = body_flow.add{type = "frame", name = "wiiuf_product_frame", caption = {"product_of"}}
-	local product_scroll = product_frame.add{type = "scroll-pane", name = "wiiuf_product_scroll"}
-	set_scroll_dimensions(product_scroll)
-	local product_table = product_scroll.add{type = "table", name = "wiiuf_product_table", colspan = 2}
-	local num_product_recipes = 0
-	for i, recipe in pairs(product_of) do
-		if add_recipe_to_list(recipe, product_table, player) then
-			num_product_recipes = num_product_recipes + 1
-		end
-	end
-
-	if side and not is_product then
-		product_frame.destroy()
-	end
-
 	-- If there was only one recipe for making this item, then go ahead and show
 	-- it immediately
-	--if num_product_recipes == 1 then
-		--show_recipe_details(product_of[1].name, player)
-	--else
+	if #ingredient_in == 1 then
+		show_recipe_details(product_of[1].name, player)
+	else
 		-- Otherwise, add an empty recipe frame so that things don't shift when it's used later
 		local recipe_frame = body_flow.add{
 			type="frame", name="wiiuf_recipe_frame", caption={"wiiuf_recipe_details"}
@@ -291,7 +244,7 @@ function identify(item, player, side)
 			type="label", name="wiiuf_recipe_hint", caption={"wiiuf_recipe_hint"}, single_line=false
 		}
 		label.style.maximal_width = 249
-	--end
+	end
 end
 
 function show_recipe_details(recipe_name, player)
@@ -389,7 +342,7 @@ function show_recipe_details(recipe_name, player)
 		-- and don't have a sprite (thanks to Helfima/Helmod for the trick).
 		local sprite = sprite_dir.."/"..thing_to_add.name
 		local sprite_options = {
-			type="sprite", name="wiiuf_recipe_item_sprite_"..thing_to_add.name, sprite=sprite, tooltip = caption
+			type="sprite", name="wiiuf_recipe_item_sprite_"..thing_to_add.name, sprite=sprite, tooltip = tooltip
 		}
 		local ok, error = pcall(function()
 			table.add(sprite_options)
@@ -407,18 +360,16 @@ function show_recipe_details(recipe_name, player)
 				label.style = style
 			end
 		end
-		if tooltip ~= true then
-			label = table.add{
-				type="label", name="wiiuf_recipe_item_label_"..thing_to_add.name, caption=caption,
-				single_line=false
-			}
-			if style then
-				label.style = style
-			end
-			label.style.maximal_width = 249
-			if tooltip then
-				label.tooltip = tooltip
-			end
+		label = table.add{
+			type="label", name="wiiuf_recipe_item_label_"..thing_to_add.name, caption=caption,
+			single_line=false
+		}
+		if style then
+			label.style = style
+		end
+		label.style.maximal_width = 249
+		if tooltip then
+			label.tooltip = tooltip
 		end
 		return table
 	end
