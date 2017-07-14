@@ -312,8 +312,8 @@ function show_recipe_details(recipe_name, player)
 
 	-- TODO: table_height and section_width should probably be globals, and
 	-- maybe configurable
-	local table_height = 350
-	local section_width = 300
+	local table_height = 600
+	local section_width = 200
 
 	local recipe_frame = body_flow.add{
 		type="frame", name="wiiuf_recipe_frame", caption={"wiiuf_recipe_details"}
@@ -321,8 +321,8 @@ function show_recipe_details(recipe_name, player)
 	local recipe_scroll = recipe_frame.add{type="scroll-pane", name="wiiuf_recipe_scroll"}
 	recipe_scroll.style.minimal_height = table_height
 	recipe_scroll.style.maximal_height = table_height
-	recipe_scroll.style.minimal_width = section_width
-	recipe_scroll.style.maximal_width = section_width
+	recipe_scroll.style.minimal_width = 700
+	recipe_scroll.style.maximal_width = 700
 
   function get_amount(thing)
     if thing.amount then
@@ -340,7 +340,7 @@ function show_recipe_details(recipe_name, player)
 
 	-- A generic function for adding an item to the list in the recipe pane
 
-	function add_sprite_and_label(add_to, thing_to_add, amount_mult, style, tooltip, sprite_dir, i)
+	function add_sprite_and_label(add_to, thing_to_add, amount_mult, style, tooltip, sprite_dir, i, prefix)
 		if sprite_dir == "auto" then
 			if game.item_prototypes[thing_to_add.name] then
 				sprite_dir = "item"
@@ -363,7 +363,12 @@ function show_recipe_details(recipe_name, player)
 		elseif sprite_dir == "fluid" then
 			localised_name = game.fluid_prototypes[thing_to_add.name].localised_name
 		end
-		local table = add_to.add{type="table", name="wiiuf_recipe_table_"..tostring(i), colspan=2}
+		local colspan = 2
+		if prefix then
+			colspan = 3
+		end
+		local table = add_to.add{type="table", name="wiiuf_recipe_table_"..tostring(i), colspan=colspan}
+		
 		-- In case the sprite does not exist we use pcall to catch the exception
 		-- and don't have a sprite (thanks to Helfima/Helmod for the trick).
 		local sprite = sprite_dir.."/"..thing_to_add.name
@@ -384,7 +389,17 @@ function show_recipe_details(recipe_name, player)
 			
       caption = {"wiiuf_recipe_entry", math.ceil(get_amount(thing_to_add) * amount_mult), localised_name}
 		end
-		local label = table.add{
+		local label = nil
+		if prefix then
+			label = table.add{
+				type="label", name="wiiuf_recipe_item_label_p_"..thing_to_add.name, caption=prefix,
+				single_line=false
+			}			
+			if style then
+				label.style = style
+			end
+		end
+		label = table.add{
 			type="label", name="wiiuf_recipe_item_label_"..thing_to_add.name, caption=caption,
 			single_line=false
 		}
@@ -433,15 +448,11 @@ function show_recipe_details(recipe_name, player)
 	      	d = d + 1	      	
 	      end
 	      for p,r in pairs(productToRecipeTable) do
+	      	local p_amount = amount * ingredient.amount / p.amount
 	      	if n > 1 then
-	      		local flow = sub_scroll.add{type="flow", name="wiiuf_recipe_item_label_alt_flow_"..tostring(i), direction="horizontal"}
-	      		i = i + 1
-	      		flow.add{ type="label", name="wiiuf_recipe_item_label_alt_"..tostring(i), caption="? "}.style.left_padding = depth * 15
-	      		i = i + 1
-	      		flow.add{ type="label", name="wiiuf_recipe_item_label_alt_"..tostring(i), caption=r.localised_name}	      		
-	      		i = i + 1
+	      		add_sprite_and_label(sub_scroll, r, false, nil, nil, "recipe", i, 'R: ' .. math.ceil(p_amount)).style.left_padding = depth * 15	      		
 	      	end
-	      	i = add_ingredients_recursively(r, amount * ingredient.amount / p.amount, sub_scroll, recipes, d, i, no_dup_set)	      				    	    
+	      	i = add_ingredients_recursively(r, p_amount, sub_scroll, recipes, d, i, no_dup_set)	      				    	    
 	      end
 	    end
     end
