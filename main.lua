@@ -6,6 +6,8 @@ side_width = 1000
 side_min_width = 240
 side_height = 250
 tree_padding = 22
+normal_height = 800
+normal_width = 1000
 
 function identify(item, player, side, select_recipe_name)
 	-- If it's not actually an item, do nothing
@@ -127,8 +129,8 @@ function identify(item, player, side, select_recipe_name)
 		body_flow = body_scroll.add{type = "flow", name = "wiiuf_body_flow", direction = "vertical", style = "achievements_flow_style"}
 	else
 		body_flow = main_frame.add{type = "flow", name = "wiiuf_body_flow", direction = "vertical", style = "achievements_flow_style"}
-		body_flow.style.maximal_height = 1000
-		body_flow.style.minimal_height = 1000
+		body_flow.style.maximal_height = normal_height
+		body_flow.style.minimal_height = normal_height
 	end
 
 	
@@ -136,8 +138,8 @@ function identify(item, player, side, select_recipe_name)
   if not side then
   
 		function set_scroll_dimensions(scroll)
-				scroll.style.minimal_width = 1000
-				scroll.style.maximal_width = 1000
+				scroll.style.minimal_width = normal_width
+				scroll.style.maximal_width = normal_width
 				if side then
 					scroll.style.minimal_width = side_width
 					scroll.style.maximal_width = side_width
@@ -225,10 +227,7 @@ function show_recipe_details(recipe_name, player, side)
 		body_flow.wiiuf_recipe_frame.destroy()
 	end
 
-	-- TODO: table_height and section_width should probably be globals, and
-	-- maybe configurable
-	local table_height = 700
-	local section_width = 1000
+	local table_height = normal_height - 300
 
 	local recipe_scroll = nil
 	if not side then
@@ -238,8 +237,8 @@ function show_recipe_details(recipe_name, player, side)
 		recipe_scroll = recipe_frame.add{type="scroll-pane", name="wiiuf_recipe_scroll"}
 		recipe_scroll.style.minimal_height = table_height
 		recipe_scroll.style.maximal_height = table_height
-		recipe_scroll.style.minimal_width = section_width
-		recipe_scroll.style.maximal_width = section_width
+		recipe_scroll.style.minimal_width = normal_width
+		recipe_scroll.style.maximal_width = normal_width
 	else
 		recipe_scroll = body_flow
 	end
