@@ -56,17 +56,21 @@ script.on_event(defines.events.on_gui_click, function(event)
 		minimise(event.element.name:sub(16), player, event.element.parent.parent.name == "wiiuf_left_frame")
 	
 	elseif event.element.name:find("wiiuf_show_") then
-		identify(event.element.name:sub(12), player)
 		if event.element.parent.name == "wiiuf_item_table" then 
+			local splitted = split(event.element.name:sub(12),"__")
+			log("unf: recipe="..splitted[2])
+			identify(splitted[1], player, false, splitted[2])
 			event.element.destroy()
 			if #player.gui.left.wiiuf_item_flow.wiiuf_item_table.children_names == 1 then
 				player.gui.left.wiiuf_item_flow.destroy()
 			end
-		else mod_gui.get_frame_flow(player).wiiuf_left_frame.destroy()
+		else 
+			identify(event.element.name:sub(12), player, false, load_recipe_name(get_main_frame_side(player)))
+			mod_gui.get_frame_flow(player).wiiuf_left_frame.destroy()			
 		end
 	
 	elseif event.element.name:find("wiiuf_pin_") then
-		identify(event.element.name:sub(11), player, true)
+		identify(event.element.name:sub(11), player, true, load_recipe_name(get_main_frame_center(player)))
 		
 	--Sprite for item in search results
 	elseif event.element.name:find("wiiuf_item_sprite_") then

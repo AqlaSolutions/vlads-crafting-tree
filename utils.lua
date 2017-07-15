@@ -1,5 +1,3 @@
-require("mod-gui")
-
 SHOW_ALL = false	-- Set to true to also display disabled recipes and recipes without technology.
 
 function find_technology(recipe, player)
@@ -78,12 +76,15 @@ function get_amount(thing)
 	end
 end
 
-
-function get_wiiuf_flow(player)
-	local button_flow = mod_gui.get_button_flow(player)
-	local flow = button_flow.wiiuf_flow
-	if not flow then
-		flow = button_flow.add{type = "flow", name = "wiiuf_flow"}
-	end
-	return flow
+function split(inputstr, sep)
+      if sep == nil then
+              sep = "%s"
+      end
+      local t={}
+      local i=1
+      for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+              t[i] = str
+              i = i + 1
+      end
+      return t
 end

@@ -1,6 +1,57 @@
 require("mod-gui")
 require("utils")
 
+function store_recipe_name(main_frame, name)
+	local current = main_frame.storage_current_recipe_name
+	if current then current.destroy() end
+	main_frame.add{type="label",name="storage_current_recipe_name",caption=name}.style.visible=false
+end
+
+function load_recipe_name(main_frame)
+	if not main_frame then return nil end
+	local current = main_frame.storage_current_recipe_name
+	if current then return current.caption end
+	return nil
+end
+
+function get_main_frame(player)
+	local main_frame = get_main_frame_center(player)
+	if not main_frame then
+		main_frame = get_main_frame_side(player)
+	end
+	return main_frame
+end
+
+function get_main_frame(side, player)
+	if side then
+		return get_main_frame_side(player)
+	else
+		return get_main_frame_center(player)
+	end
+	return main_frame
+end
+
+function get_main_frame_center(player)
+	return player.gui.center.wiiuf_center_frame
+end
+
+function get_main_frame_side(player)
+	main_frame = mod_gui.get_frame_flow(player).wiiuf_left_frame
+	if main_frame then
+		main_frame = main_frame.wiiuf_body_scroll
+	end
+	return main_frame
+end
+
+function get_wiiuf_flow(player)
+	local button_flow = mod_gui.get_button_flow(player)
+	local flow = button_flow.wiiuf_flow
+	if not flow then
+		flow = button_flow.add{type = "flow", name = "wiiuf_flow"}
+	end
+	return flow
+end
+
 function add_recipe_to_list(recipe, add_to, player)
 	local from_research = recipe.enabled or find_technology(recipe.name, player)
 	if from_research then

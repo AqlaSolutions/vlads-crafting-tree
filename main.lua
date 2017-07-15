@@ -7,10 +7,7 @@ side_min_width = 240
 side_height = 250
 tree_padding = 22
 
-last_item = nil
-last_recipe_name = nil
-
-function identify(item, player, side)
+function identify(item, player, side, select_recipe_name)
 	-- If it's not actually an item, do nothing
 	-- This can happen if you click the recipe name on the recipe pane
 	if not game.item_prototypes[item] and not game.fluid_prototypes[item] then
@@ -63,7 +60,7 @@ function identify(item, player, side)
 	end
 		
 	-- GUI stuff
-	if player.gui.center.wiiuf_center_frame then player.gui.center.wiiuf_center_frame.destroy() end
+	if get_main_frame_center(player) then get_main_frame_center(player).destroy() end
 	local mod_frame_flow = mod_gui.get_frame_flow(player)
 	if side and mod_frame_flow.wiiuf_left_frame then mod_frame_flow.wiiuf_left_frame.destroy() end
 	
@@ -77,7 +74,6 @@ function identify(item, player, side)
 			type = "frame", name = "wiiuf_left_frame", direction = "vertical"
 		}
 	end
-	
 	
 	-- Title flow
 	local title_flow = main_frame.add{type = "flow", name = "wiiuf_title_flow", direction = "horizontal"}
@@ -93,9 +89,14 @@ function identify(item, player, side)
 		localised_name = game.fluid_prototypes[item].localised_name
 	end
 	
-	title_flow.add{type = "sprite", name = "wiiuf_title_sprite", sprite = sprite}
-	title_flow.add{type = "label", name = "wiiuf_title_label", caption = localised_name, style = "frame_caption_label_style"}
+	if not side then
+		title_flow.add{type = "sprite", name = "wiiuf_title_sprite", sprite = sprite}
+		title_flow.add{type = "label", name = "wiiuf_title_label", caption = localised_name, style = "frame_caption_label_style"}
+		title_flow.add{type = "label", name = "wiiuf_title_label_separator", caption = ": ", style = "frame_caption_label_style"}
+	end
 	
+	title_flow.add{type = "flow", name = "wiiuf_title_recipe_flow", direction = "horizontal"}
+		
 	-- buttons
 	local button_style = "slot_button_style"
 	if side then button_style = "search_button_style" end
@@ -146,6 +147,7 @@ function identify(item, player, side)
 		function setup_area(name, title, hashtable, add_func)
 			local mined_frame = body_flow.add{type = "frame", name = "wiiuf_"..name.."_frame", caption = {title}}
 			local mined_scroll = mined_frame.add{type = "scroll-pane", name = "wiiuf_"..name.."_scroll"}
+			mined_scroll.vertical_scroll_policy = "never"
 			set_scroll_dimensions(mined_scroll)
 			mined_scroll = mined_scroll.add{type = "flow", name = "wiiuf_"..name.."_scroll_flow", direction = "horizontal"}
 			for i, entity in pairs(hashtable) do
@@ -173,14 +175,13 @@ function identify(item, player, side)
 			end)
 	end
 	
-	if item == last_item and last_recipe_name ~= nil then
-		show_recipe_details(last_recipe_name, player, side) -- restore last
+	if select_recipe_name ~= nil then
+		show_recipe_details(select_recipe_name, player, side)
 	-- If there was only one recipe for making this item, then go ahead and show
 	-- it immediately
 	elseif #product_of > 0 then
 		show_recipe_details(product_of[1].name, player, side)
 	else
-		last_recipe_name = nil
 		-- Otherwise, add an empty recipe frame so that things don't shift when it's used later
 		local recipe_frame = body_flow.add{
 			type="frame", name="wiiuf_recipe_frame", caption={"wiiuf_recipe_details"}
@@ -192,25 +193,31 @@ function identify(item, player, side)
 		}
 		label.style.maximal_width = 249
 	end
-	last_item = item
 end
 
 function show_recipe_details(recipe_name, player, side)
-	last_recipe_name = recipe_name
 	local recipe = player.force.recipes[recipe_name]
-	local main_frame = player.gui.center.wiiuf_center_frame
-	if not main_frame then
-		main_frame = mod_gui.get_frame_flow(player).wiiuf_left_frame
-		if main_frame then
-			main_frame = main_frame.wiiuf_body_scroll
-		end
-	end
-
+	local main_frame = get_main_frame(side,player)
 	if not main_frame then
 		player.print("No main frame")
 		return
 	end
-
+	
+	store_recipe_name(main_frame, recipe_name)
+	
+	local title_flow = nil
+	if not side then
+		title_flow = main_frame.wiiuf_title_flow.wiiuf_title_recipe_flow
+	else
+		title_flow = main_frame.parent.wiiuf_title_flow.wiiuf_title_recipe_flow
+	end
+	
+	if title_flow.wiiuf_title_recipe_sprite then title_flow.wiiuf_title_recipe_sprite.destroy() end
+	if title_flow.wiiuf_title_recipe_label then title_flow.wiiuf_title_recipe_label.destroy() end
+	
+	title_flow.add{type = "sprite", name = "wiiuf_title_recipe_sprite", sprite = "recipe/"..recipe_name}
+	title_flow.add{type = "label", name = "wiiuf_title_recipe_label", caption = recipe.localised_name, style = "frame_caption_label_style"}
+	
 	local body_flow = main_frame.wiiuf_body_flow
 
 	-- Remove any existing recipe entry
@@ -271,6 +278,7 @@ function show_recipe_details(recipe_name, player, side)
 			    	    break
 							end
 						end
+						if side and n > 0 then break end
 					end
 	      end
 	      local d = depth
@@ -364,18 +372,35 @@ function minimise(item, player, from_side)
 		item_flow.style.maximal_height = 350
 	end	
 	
+	
+	local main_frame = nil
+	if from_side then 
+		main_frame = get_main_frame_side(player)
+	else
+		main_frame = get_main_frame_center(player)
+	end
+	local current_recipe_name = load_recipe_name(main_frame)
+	
 	local sprite = "questionmark"
 	local localised_name = item
-	if game.item_prototypes[item] then
-		sprite = "item/"..item
-		localised_name = game.item_prototypes[item].localised_name
-	elseif game.fluid_prototypes[item] then
-		sprite = "fluid/"..item
-		localised_name = game.fluid_prototypes[item].localised_name
+	
+	if current_recipe_name ~= nil then
+		local recipe = player.force.recipes[current_recipe_name]
+		sprite = "recipe/"..recipe.name
+		localised_name = recipe.localised_name
+	else
+	
+		if game.item_prototypes[item] then
+			sprite = "item/"..item
+			localised_name = game.item_prototypes[item].localised_name
+		elseif game.fluid_prototypes[item] then
+			sprite = "fluid/"..item
+			localised_name = game.fluid_prototypes[item].localised_name
+		end
 	end
-	if not player.gui.left.wiiuf_item_flow.wiiuf_item_table["wiiuf_show_" .. item] then
-		player.gui.left.wiiuf_item_flow.wiiuf_item_table.add{type = "sprite-button", name = "wiiuf_show_" .. item, sprite = sprite, tooltip = {"show", localised_name}, style = "slot_button_style"}
-	end
+	local name = "wiiuf_show_" .. item
+	if current_recipe_name ~= nil then name = name.."__"..current_recipe_name end
+	local button = player.gui.left.wiiuf_item_flow.wiiuf_item_table.add{type = "sprite-button", name = name, sprite = sprite, tooltip = {"show", localised_name}, style = "slot_button_style"}
 	if not from_side and player.gui.center.wiiuf_center_frame then player.gui.center.wiiuf_center_frame.destroy() end
 	local mod_frame_flow = mod_gui.get_frame_flow(player)
 	if from_side and mod_frame_flow.wiiuf_left_frame then mod_frame_flow.wiiuf_left_frame.destroy() end
