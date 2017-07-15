@@ -7,3 +7,6 @@ This mod is aimed to show a crafting tree for all ingredients with their amounts
 4.    You can pin or minimize a currently selected recipe to the left side of screen.
 
 The "R:" in crafting tree means that there are multiple recipes from which you can choose to make the parent item. The text after "R:" is a such recipe name.
+
+
+This is a fork of <a href="https://mods.factorio.com/mods/Coppermine/what-is-it-really-used-for">what-is-it-really-used-for</a>. It's not compatible with the original.
