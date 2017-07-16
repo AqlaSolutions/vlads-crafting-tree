@@ -8,6 +8,7 @@ side_height = 250
 tree_padding = 22
 normal_height = 800
 normal_width = 1000
+nav_height = 50
 
 function identify(item, player, side, select_recipe_name)
 	-- If it's not actually an item, do nothing
@@ -142,18 +143,16 @@ function identify(item, player, side, select_recipe_name)
 		function set_scroll_dimensions(scroll)
 				scroll.style.minimal_width = normal_width
 				scroll.style.maximal_width = normal_width
-				if side then
-					scroll.style.minimal_width = side_width
-					scroll.style.maximal_width = side_width
-				end
+				scroll.style.minimal_height = nav_height
 		end
 		
 		function setup_area(name, title, hashtable, add_func)
-			local mined_frame = body_flow.add{type = "frame", name = "wiiuf_"..name.."_frame", caption = {title}}
+			local mined_frame = body_flow.add{type = "frame", name = "wiiuf_"..name.."_frame"}
 			local mined_scroll = mined_frame.add{type = "scroll-pane", name = "wiiuf_"..name.."_scroll"}
 			mined_scroll.vertical_scroll_policy = "never"
 			set_scroll_dimensions(mined_scroll)
 			mined_scroll = mined_scroll.add{type = "flow", name = "wiiuf_"..name.."_scroll_flow", direction = "horizontal"}
+			mined_scroll.add{type = "label", caption = {title}}.style.right_padding = 15
 			for i, entity in pairs(hashtable) do
 				if not add_func then
 					mined_scroll.add{type = "sprite", name = "wiiuf_sprite_" .. i, sprite = "entity/"..entity.name, tooltip = entity.localised_name}
@@ -229,7 +228,7 @@ function show_recipe_details(recipe_name, player, side)
 		body_flow.wiiuf_recipe_frame.destroy()
 	end
 
-	local table_height = normal_height - 300
+	local table_height = normal_height - (nav_height + 15) * 4 - 20
 
 	local recipe_scroll = nil
 	if not side then
