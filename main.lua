@@ -28,7 +28,7 @@ function identify(item, player, side, select_recipe_name)
 	
 	for name, recipe in pairs(player.force.recipes) do
 		if is_normal_recipe(name) then
-			log("recipe "..name)
+			--log("recipe "..name)
 			for _, ingredient in pairs(recipe.ingredients) do
 				if ingredient.name ==	item then					
 					table.insert(ingredient_in, recipe)
