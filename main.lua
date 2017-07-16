@@ -10,6 +10,10 @@ normal_height = 800
 normal_width = 1000
 nav_height = 50
 
+function is_normal_recipe(name)
+	return name:sub(1,("dry411srev-"):len())~="dry411srev-" and name:sub(1,("rf-"):len())~="rf-"
+end
+
 function identify(item, player, side, select_recipe_name)
 	-- If it's not actually an item, do nothing
 	-- This can happen if you click the recipe name on the recipe pane
@@ -23,7 +27,8 @@ function identify(item, player, side, select_recipe_name)
 	local product_of = {}
 	
 	for name, recipe in pairs(player.force.recipes) do
-		if name:sub(1,("dry411srev-"):len())~="dry411srev-" then
+		if is_normal_recipe(name) then
+			log("recipe "..name)
 			for _, ingredient in pairs(recipe.ingredients) do
 				if ingredient.name ==	item then					
 					table.insert(ingredient_in, recipe)
@@ -267,10 +272,7 @@ function show_recipe_details(recipe_name, player, side)
 				local recipe_candidates = product_to_recipe_table[ingredient.name]
 				if (recipe_candidates == nil) then recipe_candidates = { } end
 				for _,r in pairs(recipe_candidates) do
-					if (r.name:sub(-("-barrel"):len())~="-barrel") and 
-							(no_dup_set[r.name] == nil) and
-							(r.name:sub(1,("dry411srev-"):len())~="dry411srev-") then
-						
+					if is_normal_recipe(r.name) and (no_dup_set[r.name] == nil) then						
 						for _, p in pairs(r.products) do
 							if p.name == ingredient.name then
 								if get_amount(p) > 0 then
