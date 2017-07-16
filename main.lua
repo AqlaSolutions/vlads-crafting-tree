@@ -22,17 +22,19 @@ function identify(item, player, side, select_recipe_name)
 	local product_of = {}
 	
 	for name, recipe in pairs(player.force.recipes) do
-		for _, ingredient in pairs(recipe.ingredients) do
-			if ingredient.name ==	item then
-				table.insert(ingredient_in, recipe)
-				break
+		if name:sub(1,("dry411srev-"):len())~="dry411srev-" then
+			for _, ingredient in pairs(recipe.ingredients) do
+				if ingredient.name ==	item then					
+					table.insert(ingredient_in, recipe)
+					break
+				end
 			end
-		end
-		
-		for _, product in pairs(recipe.products) do
-			if product.name == item then
-				table.insert(product_of, recipe)
-				break
+			
+			for _, product in pairs(recipe.products) do
+				if product.name == item and get_amount(product) > 0 then
+					table.insert(product_of, recipe)
+					break
+				end
 			end
 		end
 	end
@@ -245,7 +247,7 @@ function show_recipe_details(recipe_name, player, side)
 
 	-- A generic function for adding an item to the list in the recipe pane
 
-	function add_ingredients_recursively(recipe, amount, recipe_scroll, recipes, depth, i, no_dup_set, side) 
+	function add_ingredients_recursively(recipe, amount, recipe_scroll, recipes, product_to_recipe_table, depth, i, no_dup_set, side) 
 		no_dup_set[recipe.name] = true
 		local container = recipe_scroll.add{type="flow", name="wiiuf_recipe_depth_flow_"..tostring(i), direction="vertical"}
 		if depth == 0 then
@@ -257,26 +259,29 @@ function show_recipe_details(recipe_name, player, side)
 			add_sprite_and_label(ingredient_container, ingredient, amount, nil, nil, "auto", i, nil, side).style.left_padding = (depth - 1) * tree_padding
 			i = i + 1
 			
-			local productToRecipeTable = { }
+			local found = { }
 			local n = 0
 			if depth < 5 then
 				sub_scroll = ingredient_container
 				--i = i + 1
-				local single_recipe = recipes[ingredient.name]
-				local candidates = recipes
 				local n = 0
-				if single_recipe~=nil then
-					candidates = { [ingredient.name] = single_recipe }
-				end
-				for _, r in pairs(candidates) do
-					if (string.sub(r.name, -string.len("-barrel"))~="-barrel") and (no_dup_set[r.name] == nil) then
+				local recipe_candidates = product_to_recipe_table[ingredient.name]
+				if (recipe_candidates == nil) then recipe_candidates = { } end
+				for _,r in pairs(recipe_candidates) do
+					if (r.name:sub(-("-barrel"):len())~="-barrel") and 
+							(no_dup_set[r.name] == nil) and
+							(r.name:sub(1,("dry411srev-"):len())~="dry411srev-") then
+						
 						for _, p in pairs(r.products) do
 							if p.name == ingredient.name then
-								productToRecipeTable[p] = r
-								n = n + 1
+								if get_amount(p) > 0 then
+									found[p] = r
+									n = n + 1
+								end
 								break
 							end
 						end
+						
 						if side and n > 0 then break end
 					end
 				end
@@ -284,12 +289,12 @@ function show_recipe_details(recipe_name, player, side)
 				if n > 1 then
 					d = d + 1					
 				end
-				for p,r in pairs(productToRecipeTable) do
-					local p_amount = amount * ingredient.amount / p.amount
+				for p,r in pairs(found) do
+					local p_amount = amount * get_amount(ingredient) / get_amount(p)
 					if n > 1 then
 						add_sprite_and_label(sub_scroll, r, false, nil, nil, "recipe", i, 'R: ' .. math.ceil(p_amount), side).style.left_padding = depth * tree_padding
 					end
-					i = add_ingredients_recursively(r, p_amount, sub_scroll, recipes, d, i, no_dup_set, side)													
+					i = add_ingredients_recursively(r, p_amount, sub_scroll, recipes, product_to_recipe_table, d, i, no_dup_set, side)													
 				end
 			end
 		end
@@ -325,7 +330,18 @@ function show_recipe_details(recipe_name, player, side)
 				style="bold_label_style"
 			}
 		end
-		add_ingredients_recursively(recipe, 1, recipe_scroll, recipes, depth, i, { }, side) 
+		
+		local product_to_recipe_table = { }
+		for _, r in pairs(recipes) do
+			for _, p in pairs(r.products) do
+				if not product_to_recipe_table[p.name] then
+					product_to_recipe_table[p.name] = { }
+				end
+				table.insert(product_to_recipe_table[p.name], r)
+			end
+		end
+			
+		add_ingredients_recursively(recipe, 1, recipe_scroll, recipes, product_to_recipe_table, depth, i, { }, side) 
 		
 		if not side then
 			-- Finally add machines
