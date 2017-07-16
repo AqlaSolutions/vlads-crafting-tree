@@ -63,7 +63,7 @@ function sort_recipes(recipes, player)
 end
 
 function get_amount(thing)
-  if thing.amount then
+	if thing.amount then
 			return thing.amount
 		elseif thing.amount_min and thing.amount_max then
 			local expected_return = (thing.amount_min + thing.amount_max) / 2
@@ -77,14 +77,14 @@ function get_amount(thing)
 end
 
 function split(inputstr, sep)
-      if sep == nil then
-              sep = "%s"
-      end
-      local t={}
-      local i=1
-      for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
-              t[i] = str
-              i = i + 1
-      end
-      return t
+			if sep == nil then
+							sep = "%s"
+			end
+			local t={}
+			local i=1
+			for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+							t[i] = str
+							i = i + 1
+			end
+			return t
 end

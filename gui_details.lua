@@ -78,8 +78,8 @@ function add_sprite_and_label(add_to, thing_to_add, amount_mult, style, tooltip,
 		if game.item_prototypes[thing_to_add.name] then
 			localised_name = game.item_prototypes[thing_to_add.name].localised_name
 		else
-			-- We were told it was an item but it wasn't.  This can happen for
-			-- crafting entities sometimes.  Just silently do nothing in this case
+			-- We were told it was an item but it wasn't.	This can happen for
+			-- crafting entities sometimes.	Just silently do nothing in this case
 			return
 		end
 	elseif sprite_dir == "fluid" then
@@ -99,11 +99,11 @@ function add_sprite_and_label(add_to, thing_to_add, amount_mult, style, tooltip,
 	
 	local caption = localised_name
 	if amount_mult ~= false and amount_mult ~= nil then
-    if amount_mult == true then
-      amount_mult = 1
-    end
+		if amount_mult == true then
+			amount_mult = 1
+		end
 		
-    caption = {"wiiuf_recipe_entry", string.format("%4.0f", math.ceil(get_amount(thing_to_add) * amount_mult)), localised_name}
+		caption = {"wiiuf_recipe_entry", string.format("%4.0f", math.ceil(get_amount(thing_to_add) * amount_mult)), localised_name}
 	end
 	
 	-- In case the sprite does not exist we use pcall to catch the exception

@@ -23,7 +23,7 @@ function identify(item, player, side, select_recipe_name)
 	
 	for name, recipe in pairs(player.force.recipes) do
 		for _, ingredient in pairs(recipe.ingredients) do
-			if ingredient.name ==  item then
+			if ingredient.name ==	item then
 				table.insert(ingredient_in, recipe)
 				break
 			end
@@ -135,8 +135,8 @@ function identify(item, player, side, select_recipe_name)
 
 	
 	
-  if not side then
-  
+	if not side then
+	
 		function set_scroll_dimensions(scroll)
 				scroll.style.minimal_width = normal_width
 				scroll.style.maximal_width = normal_width
@@ -245,126 +245,126 @@ function show_recipe_details(recipe_name, player, side)
 
 	-- A generic function for adding an item to the list in the recipe pane
 
-  function add_ingredients_recursively(recipe, amount, recipe_scroll, recipes, depth, i, no_dup_set, side) 
-  	no_dup_set[recipe.name] = true
-    local container = recipe_scroll.add{type="flow", name="wiiuf_recipe_depth_flow_"..tostring(i), direction="vertical"}
-    if depth == 0 then
-    	container.direction = "horizontal"
-    end
-    depth = depth + 1
+	function add_ingredients_recursively(recipe, amount, recipe_scroll, recipes, depth, i, no_dup_set, side) 
+		no_dup_set[recipe.name] = true
+		local container = recipe_scroll.add{type="flow", name="wiiuf_recipe_depth_flow_"..tostring(i), direction="vertical"}
+		if depth == 0 then
+			container.direction = "horizontal"
+		end
+		depth = depth + 1
 		for _, ingredient in pairs(recipe.ingredients) do
 			local ingredient_container = container.add{type="flow", name="wiiuf_recipe_depth_flow_"..tostring(i), direction="vertical"}
-      add_sprite_and_label(ingredient_container, ingredient, amount, nil, nil, "auto", i, nil, side).style.left_padding = (depth - 1) * tree_padding
-      i = i + 1
+			add_sprite_and_label(ingredient_container, ingredient, amount, nil, nil, "auto", i, nil, side).style.left_padding = (depth - 1) * tree_padding
+			i = i + 1
 			
 			local productToRecipeTable = { }
 			local n = 0
-      if depth < 5 then
-        sub_scroll = ingredient_container
-		    --i = i + 1
-	      local single_recipe = recipes[ingredient.name]
-	      local candidates = recipes
-	      local n = 0
-	      if single_recipe~=nil then
-	      	candidates = { [ingredient.name] = single_recipe }
-	      end
-	      for _, r in pairs(candidates) do
-	      	if (string.sub(r.name, -string.len("-barrel"))~="-barrel") and (no_dup_set[r.name] == nil) then
-		      	for _, p in pairs(r.products) do
-			      	if p.name == ingredient.name then
-			      		productToRecipeTable[p] = r
-			      		n = n + 1
-			    	    break
+			if depth < 5 then
+				sub_scroll = ingredient_container
+				--i = i + 1
+				local single_recipe = recipes[ingredient.name]
+				local candidates = recipes
+				local n = 0
+				if single_recipe~=nil then
+					candidates = { [ingredient.name] = single_recipe }
+				end
+				for _, r in pairs(candidates) do
+					if (string.sub(r.name, -string.len("-barrel"))~="-barrel") and (no_dup_set[r.name] == nil) then
+						for _, p in pairs(r.products) do
+							if p.name == ingredient.name then
+								productToRecipeTable[p] = r
+								n = n + 1
+								break
 							end
 						end
 						if side and n > 0 then break end
 					end
-	      end
-	      local d = depth
-	      if n > 1 then
-	      	d = d + 1	      	
-	      end
-	      for p,r in pairs(productToRecipeTable) do
-	      	local p_amount = amount * ingredient.amount / p.amount
-	      	if n > 1 then
-	      		add_sprite_and_label(sub_scroll, r, false, nil, nil, "recipe", i, 'R: ' .. math.ceil(p_amount), side).style.left_padding = depth * tree_padding
-	      	end
-	      	i = add_ingredients_recursively(r, p_amount, sub_scroll, recipes, d, i, no_dup_set, side)	      				    	    
-	      end
-	    end
-    end
-    -- uncomment to see all content
-    --no_dup_set[recipe.name] = nil
-    return i
-  end
+				end
+				local d = depth
+				if n > 1 then
+					d = d + 1					
+				end
+				for p,r in pairs(productToRecipeTable) do
+					local p_amount = amount * ingredient.amount / p.amount
+					if n > 1 then
+						add_sprite_and_label(sub_scroll, r, false, nil, nil, "recipe", i, 'R: ' .. math.ceil(p_amount), side).style.left_padding = depth * tree_padding
+					end
+					i = add_ingredients_recursively(r, p_amount, sub_scroll, recipes, d, i, no_dup_set, side)													
+				end
+			end
+		end
+		-- uncomment to see all content
+		--no_dup_set[recipe.name] = nil
+		return i
+	end
 
-  function add_single_recipe(recipe, recipe_scroll, recipes, depth, i, side) 
-    if not side then
-	    add_sprite_and_label(recipe_scroll, recipe, false, nil, nil, "recipe", i)
-	    i = i + 1
-           
-	    -- First add products
-	    recipe_scroll.add{
-	      type="label", name="wiiuf_recipe_products_heading"..tostring(i), caption={"wiiuf_recipe_products_heading"},
-	      style="bold_label_style"
-	    }
-    end
-    for _, product in pairs(recipe.products) do
+	function add_single_recipe(recipe, recipe_scroll, recipes, depth, i, side) 
+		if not side then
+			add_sprite_and_label(recipe_scroll, recipe, false, nil, nil, "recipe", i)
+			i = i + 1
+					 
+			-- First add products
+			recipe_scroll.add{
+				type="label", name="wiiuf_recipe_products_heading"..tostring(i), caption={"wiiuf_recipe_products_heading"},
+				style="bold_label_style"
+			}
+		end
+		for _, product in pairs(recipe.products) do
 			local description = nil
 			if game.entity_prototypes[product.name] then
 				description = game.entity_prototypes[product.name].localised_description
 			end
 			add_sprite_and_label(recipe_scroll, product, true, nil, description, "auto", i)
-      i = i + 1
-    end
-    
-    -- add ingredients
-    if not side then
-	    recipe_scroll.add{
-	      type="label", name="wiiuf_recipe_ingredients_heading"..tostring(i), caption={"wiiuf_recipe_ingredients_heading"},
-	      style="bold_label_style"
-	    }
-    end
-    add_ingredients_recursively(recipe, 1, recipe_scroll, recipes, depth, i, { }, side) 
-    
-    if not side then
-	    -- Finally add machines
-	    recipe_scroll.add{
-	      type="label", name="wiiuf_recipe_machines_heading"..tostring(i), caption={"wiiuf_recipe_machines_heading"},
-	      style="bold_label_style"
-	    }
-	    local machines = get_machines_for_recipe(recipe, player)
-	    -- Figure out which machines are available at current tech
-	    local machine_unlocks = {}
-	    for name, recipe in pairs(player.force.recipes) do
-	      for _, product in pairs(recipe.products) do
-	        if machines[product.name] then
-	          if recipe.enabled then
-	            machine_unlocks[product.name] = "already_unlocked"
-	          else
-	            machine_unlocks[product.name] = find_technology(recipe.name, player)
-	          end
-	        end
-	      end
-	    end
-	    for _, machine in pairs(machines) do
-	      local unlock = machine_unlocks[machine.name]
-	      if unlock then
-	        local tooltip = nil
-	        local style = nil
-	        if unlock ~= "already_unlocked" then
-	          style = "invalid_label_style"
-	          tooltip = {"behind_research", unlock}
-	        end
-	        add_sprite_and_label(recipe_scroll, machine, false, style, tooltip, "item", i)
-	        i = i + 1
-	      end
-	    end
-	  end
-    return i
-  end
+			i = i + 1
+		end
+		
+		-- add ingredients
+		if not side then
+			recipe_scroll.add{
+				type="label", name="wiiuf_recipe_ingredients_heading"..tostring(i), caption={"wiiuf_recipe_ingredients_heading"},
+				style="bold_label_style"
+			}
+		end
+		add_ingredients_recursively(recipe, 1, recipe_scroll, recipes, depth, i, { }, side) 
+		
+		if not side then
+			-- Finally add machines
+			recipe_scroll.add{
+				type="label", name="wiiuf_recipe_machines_heading"..tostring(i), caption={"wiiuf_recipe_machines_heading"},
+				style="bold_label_style"
+			}
+			local machines = get_machines_for_recipe(recipe, player)
+			-- Figure out which machines are available at current tech
+			local machine_unlocks = {}
+			for name, recipe in pairs(player.force.recipes) do
+				for _, product in pairs(recipe.products) do
+					if machines[product.name] then
+						if recipe.enabled then
+							machine_unlocks[product.name] = "already_unlocked"
+						else
+							machine_unlocks[product.name] = find_technology(recipe.name, player)
+						end
+					end
+				end
+			end
+			for _, machine in pairs(machines) do
+				local unlock = machine_unlocks[machine.name]
+				if unlock then
+					local tooltip = nil
+					local style = nil
+					if unlock ~= "already_unlocked" then
+						style = "invalid_label_style"
+						tooltip = {"behind_research", unlock}
+					end
+					add_sprite_and_label(recipe_scroll, machine, false, style, tooltip, "item", i)
+					i = i + 1
+				end
+			end
+		end
+		return i
+	end
 
-  add_single_recipe(recipe, recipe_scroll, player.force.recipes, 0, 0, side);
+	add_single_recipe(recipe, recipe_scroll, player.force.recipes, 0, 0, side);
 end
 
 function minimise(item, player, from_side)
