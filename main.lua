@@ -310,7 +310,11 @@ function show_recipe_details(recipe_name, player, side)
 	    }
     end
     for _, product in pairs(recipe.products) do
-      add_sprite_and_label(recipe_scroll, product, true, nil, nil, "auto", i)
+			local description = nil
+			if game.entity_prototypes[product.name] then
+				description = game.entity_prototypes[product.name].localised_description
+			end
+			add_sprite_and_label(recipe_scroll, product, true, nil, description, "auto", i)
       i = i + 1
     end
     
