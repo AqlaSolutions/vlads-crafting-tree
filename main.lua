@@ -262,6 +262,7 @@ function show_recipe_details(recipe_name, player, side)
 
 	function add_ingredients_recursively(recipe, amount, recipe_scroll, recipes, product_to_recipe_table, depth, i, no_dup_set, side) 
 		no_dup_set[recipe.name] = true
+		i = i + 1
 		local container = recipe_scroll.add{type="flow", name="wiiuf_recipe_depth_flow_"..tostring(i), direction="vertical"}
 		if depth == 0 then
 			container.direction = "horizontal"
