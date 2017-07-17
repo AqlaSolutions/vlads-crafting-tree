@@ -172,7 +172,7 @@ function identify(item, player, side, select_recipe_name)
 			end
 			return mined_scroll
 		end
-		setup_area("not_built", "not-built", get_not_built_available_entities(player.force), 
+		setup_area("not_built", "not-built", get_not_built_available_entities(player), 
 			function(i,element,scroll)
 				scroll.add{type = "sprite", name = "wiiuf_recipe_item_sprite_" .. element.item.name, sprite = "recipe/"..element.recipe.name, tooltip = element.item.localised_name}
 			end)
@@ -435,16 +435,10 @@ function minimise(item, player, from_side)
 	if from_side and mod_frame_flow.wiiuf_left_frame then mod_frame_flow.wiiuf_left_frame.destroy() end
 end
 
-function get_not_built_available_entities(force)
-	-- TODO track entitiy built event
-	
+function get_not_built_available_entities(player)
 	local results = { }
 	local set = { }
-	
-	local all_entities = { }
-	for _,entity in pairs(Surface.find_all_entities({force=force})) do
-		all_entities[entity.name] = true
-	end
+	local force = player.force
 	
 	for _,tech in pairs(force.technologies) do
 		if tech.researched then
@@ -459,7 +453,7 @@ function get_not_built_available_entities(force)
 								--found = true
 								--break
 							--end
-							found = all_entities[item.place_result.name] ~= nil
+							found = global.player_entities_built[player.index][item.place_result.name] ~= nil
 							if not found then
 								set[item.name] = true
 								table.insert(results, { recipe = recipe, product = product, entity = item.place_result, item = item, description = item.place_result.localised_description })

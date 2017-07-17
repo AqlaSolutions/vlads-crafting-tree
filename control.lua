@@ -4,21 +4,26 @@ require("utils")
 require("gui_details")
 require("main")
 
-script.on_init(function()
+function init()
 	global.n_fluids = 0
 	for _ in pairs(game.fluid_prototypes) do
 		global.n_fluids = global.n_fluids +1
 	end
-	for _, player in pairs(game.players) do add_top_button(player) end
-end)
+	global.player_entities_built = { }
+	for _, player in pairs(game.players) do
+	 add_top_button(player)
+	 local t = { }
+	 global.player_entities_built[player.index] = t
+	 for _,entity in pairs(Surface.find_all_entities({force=player.force})) do
+	 	if entity.last_user == nil or entity.last_user.index == player.index then
+		 t[entity.name] = true
+		end
+	 end
+	end		
+end
 
-script.on_configuration_changed(function()
-	global.n_fluids = 0
-	for _ in pairs(game.fluid_prototypes) do
-		global.n_fluids = global.n_fluids +1
-	end
-	for _, player in pairs(game.players) do add_top_button(player) end
-end)
+script.on_init(init)
+script.on_configuration_changed(init)
 
 script.on_event(defines.events.on_player_created, function(event)
 	add_top_button(game.players[event.player_index])
@@ -154,5 +159,17 @@ script.on_event(defines.events.on_gui_text_changed, function(event)
 		end
 	end
 end)
+
+function entity_built(event)
+	if not global.player_entities_built then
+			log("global.player_entities_built is nil")
+			init()
+	end
+	global.player_entities_built[event.player_index][event.created_entity.name] = true
+end
+
+script.on_event(defines.events.on_robot_built_entity, entity_built)
+script.on_event(defines.events.on_built_entity, entity_built)
+
 
 -- vim:noet:ts=2
