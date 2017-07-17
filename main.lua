@@ -2,6 +2,10 @@ require("mod-gui")
 require("utils")
 require("gui_details")
 
+require 'stdlib/area/area'
+require 'stdlib/surface'
+require 'stdlib/game'
+
 side_width = 1000
 side_min_width = 240
 side_height = 250
@@ -9,6 +13,7 @@ tree_padding = 22
 normal_height = 800
 normal_width = 1000
 nav_height = 50
+nav_areas = 5
 
 function is_normal_recipe(name)
 	return name:sub(1,("dry411srev-"):len())~="dry411srev-" and name:sub(1,("rf-"):len())~="rf-"
@@ -162,21 +167,25 @@ function identify(item, player, side, select_recipe_name)
 				if not add_func then
 					mined_scroll.add{type = "sprite", name = "wiiuf_sprite_" .. i, sprite = "entity/"..entity.name, tooltip = entity.localised_name}
 				else
-					add_func(entity,mined_scroll)
+					add_func(i,entity,mined_scroll)
 				end
 			end
 			return mined_scroll
 		end
+		setup_area("not_built", "not-built", get_not_built_available_entities(player.force), 
+			function(i,element,scroll)
+				scroll.add{type = "sprite", name = "wiiuf_recipe_item_sprite_" .. element.item.name, sprite = "recipe/"..element.recipe.name, tooltip = element.item.localised_name}
+			end)
 		setup_area("mined", "mined_from", mined_from)
 		setup_area("looted", "looted_from", looted_from)
 		setup_area("ingredient", "ingredient_in", ingredient_in, 
-			function(recipe,ingredient_scroll)
+			function(i,recipe,ingredient_scroll)
 				add_recipe_to_list(recipe, ingredient_scroll, player) 
 			end)
 		
 		local num_product_recipes = 0
 		setup_area("product", "product_of", product_of, 
-			function(product,product_scroll) 
+			function(i,product,product_scroll) 
 				if add_recipe_to_list(product, product_scroll, player) then
 					num_product_recipes = num_product_recipes + 1
 				end
@@ -233,7 +242,7 @@ function show_recipe_details(recipe_name, player, side)
 		body_flow.wiiuf_recipe_frame.destroy()
 	end
 
-	local table_height = normal_height - (nav_height + 15) * 4 - 20
+	local table_height = normal_height - (nav_height + 15) * nav_areas - 20
 
 	local recipe_scroll = nil
 	if not side then
@@ -424,4 +433,42 @@ function minimise(item, player, from_side)
 	if not from_side and player.gui.center.wiiuf_center_frame then player.gui.center.wiiuf_center_frame.destroy() end
 	local mod_frame_flow = mod_gui.get_frame_flow(player)
 	if from_side and mod_frame_flow.wiiuf_left_frame then mod_frame_flow.wiiuf_left_frame.destroy() end
+end
+
+function get_not_built_available_entities(force)
+	-- TODO track entitiy built event
+	
+	local results = { }
+	local set = { }
+	
+	local all_entities = { }
+	for _,entity in pairs(Surface.find_all_entities({force=force})) do
+		all_entities[entity.name] = true
+	end
+	
+	for _,tech in pairs(force.technologies) do
+		if tech.researched then
+			for _, effect in pairs(tech.effects) do
+				if effect.type == "unlock-recipe" and effect.recipe ~= nil then
+					local recipe = force.recipes[effect.recipe]
+					for _, product in pairs(recipe.products) do
+						local item = game.item_prototypes[product.name]
+						if item ~= nil and set[item.name] == nil and item.place_result ~= nil and (not item.has_flag("hidden")) then
+							local found = false
+							--for _,entity in pairs(Surface.find_all_entities({force=force, name=item.place_result.name})) do
+								--found = true
+								--break
+							--end
+							found = all_entities[item.place_result.name] ~= nil
+							if not found then
+								set[item.name] = true
+								table.insert(results, { recipe = recipe, product = product, entity = item.place_result, item = item, description = item.place_result.localised_description })
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	return results
 end
