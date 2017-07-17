@@ -88,3 +88,24 @@ function split(inputstr, sep)
 			end
 			return t
 end
+
+function is_normal_recipe(name)
+	return name:sub(1,("dry411srev-"):len())~="dry411srev-" and name:sub(1,("rf-"):len())~="rf-"
+end
+
+
+function table.min_key_by(t, func)
+	local min = nil
+	local min_element = nil
+	if func == nil then
+		func = function(k,v) return v end
+	end
+	for k,v in pairs(t) do
+		local x = func(k,v)
+		if (min == nil) or (x < min) then
+			min = x
+			min_element = k
+		end
+	end
+	return min_element
+end

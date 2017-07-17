@@ -15,10 +15,6 @@ normal_width = 1000
 nav_height = 50
 nav_areas = 5
 
-function is_normal_recipe(name)
-	return name:sub(1,("dry411srev-"):len())~="dry411srev-" and name:sub(1,("rf-"):len())~="rf-"
-end
-
 function identify(item, player, side, select_recipe_name)
 	-- If it's not actually an item, do nothing
 	-- This can happen if you click the recipe name on the recipe pane
@@ -32,7 +28,7 @@ function identify(item, player, side, select_recipe_name)
 	local product_of = {}
 	
 	for name, recipe in pairs(player.force.recipes) do
-		if is_normal_recipe(name) then
+		if is_normal_recipe(name) and not recipe.hidden then
 			--log("recipe "..name)
 			for _, ingredient in pairs(recipe.ingredients) do
 				if ingredient.name ==	item then					
@@ -282,7 +278,7 @@ function show_recipe_details(recipe_name, player, side)
 				local recipe_candidates = product_to_recipe_table[ingredient.name]
 				if (recipe_candidates == nil) then recipe_candidates = { } end
 				for _,r in pairs(recipe_candidates) do
-					if is_normal_recipe(r.name) and (no_dup_set[r.name] == nil) then						
+					if is_normal_recipe(r.name) and not r.hidden and (no_dup_set[r.name] == nil) then						
 						for _, p in pairs(r.products) do
 							if p.name == ingredient.name then
 								if get_amount(p) > 0 then
@@ -292,14 +288,19 @@ function show_recipe_details(recipe_name, player, side)
 								break
 							end
 						end
-						
-						if side and n > 0 then break end
 					end
 				end
 				local d = depth
 				if n > 1 then
 					d = d + 1					
 				end
+				
+				if side and n > 1 then 
+					local k = table.min_key_by(found, function(k,v) return #v.ingredients end)
+					found = { [k] = found[k] }
+					n = 1
+				end
+				
 				for p,r in pairs(found) do
 					local p_amount = amount * get_amount(ingredient) / get_amount(p)
 					if n > 1 then
