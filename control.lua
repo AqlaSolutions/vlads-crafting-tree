@@ -96,6 +96,10 @@ script.on_event(defines.events.on_gui_click, function(event)
 	-- Sprite for item in recipe view
 	elseif event.element.name:find("wiiuf_recipe_item_sprite_") then
 		identify(event.element.name:sub(26), player)
+	elseif event.element.name:find("wiiuf_recipe_item_sprite") then
+		local name = event.element.name:sub(26)
+		name = name:sub(name:find("_")+1)
+		identify(name, player)
 	-- Label for item in recipe view
 	elseif event.element.name:find("wiiuf_recipe_item_label_") then
 		identify(event.element.name:sub(25), player)
@@ -160,12 +164,22 @@ script.on_event(defines.events.on_gui_text_changed, function(event)
 	end
 end)
 
+function get_player_entities_set(player_index)
+	local set = global.player_entities_built[player_index]
+	if set == nil then
+		set = { }
+		global.player_entities_built[player_index] = set
+	end
+	return set
+end
+
+
 function entity_built(event)
 	if not global.player_entities_built then
 			log("global.player_entities_built is nil")
 			init()
 	end
-	global.player_entities_built[event.player_index][event.created_entity.name] = true
+	get_player_entities_set(event.player_index)[event.created_entity.name] = true
 end
 
 script.on_event(defines.events.on_robot_built_entity, entity_built)

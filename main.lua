@@ -170,7 +170,7 @@ function identify(item, player, side, select_recipe_name)
 		end
 		setup_area("not_built", "not-built", get_not_built_available_entities(player), 
 			function(i,element,scroll)
-				scroll.add{type = "sprite", name = "wiiuf_recipe_item_sprite_" .. element.item.name, sprite = "recipe/"..element.recipe.name, tooltip = element.item.localised_name}
+				scroll.add{type = "sprite", name = "wiiuf_recipe_item_sprite" .. i .. "_" .. element.item.name, sprite = "recipe/"..element.recipe.name, tooltip = element.item.localised_name}
 			end)
 		setup_area("mined", "mined_from", mined_from)
 		setup_area("looted", "looted_from", looted_from)
@@ -440,6 +440,7 @@ end
 function get_not_built_available_entities(player)
 	local results = { }
 	local set = { }
+	local recipe_set = { }
 	local force = player.force
 	
 	for _,tech in pairs(force.technologies) do
@@ -449,15 +450,16 @@ function get_not_built_available_entities(player)
 					local recipe = force.recipes[effect.recipe]
 					for _, product in pairs(recipe.products) do
 						local item = game.item_prototypes[product.name]
-						if item ~= nil and set[item.name] == nil and item.place_result ~= nil and (not item.has_flag("hidden")) then
+						if item ~= nil and set[item.name] == nil and recipe_set[recipe.name] == nil and item.place_result ~= nil and (not item.has_flag("hidden")) then
 							local found = false
 							--for _,entity in pairs(Surface.find_all_entities({force=force, name=item.place_result.name})) do
 								--found = true
 								--break
 							--end
-							found = global.player_entities_built[player.index][item.place_result.name] ~= nil
+							found = get_player_entities_set(player.index)[item.place_result.name] ~= nil
 							if not found then
 								set[item.name] = true
+								recipe_set[recipe.name] = true
 								table.insert(results, { recipe = recipe, product = product, entity = item.place_result, item = item, description = item.place_result.localised_description })
 							end
 						end
