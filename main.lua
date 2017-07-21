@@ -321,7 +321,11 @@ function show_recipe_details(recipe_name, player, side)
 				end
 				
 				if side and n > 1 then 
-					local k = table.min_key_by(found, function(k,v) return #v.ingredients end)
+					local k = table.min_key_by(found, 
+						function(k,v) 
+							if #v.ingredients == 1 and v.ingredients[1].name == "y-unicomp-a2" then return 999999 end
+							return #v.ingredients
+						end)
 					found = { [k] = found[k] }
 					n = 1
 				end
