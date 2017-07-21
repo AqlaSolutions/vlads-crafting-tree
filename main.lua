@@ -254,8 +254,11 @@ function show_recipe_details(recipe_name, player, side)
 		recipe_scroll = body_flow
 	end
 
+	local simple_names_list = { "petroleum-gas", "water", "steam", "crude-oil", "light-oil", "heavy-oil", "sulfuric-acid", "lubricant", "y-unicomp-a2", "steel-plate" }
+	simple_names = { }
+	for _,name in pairs(simple_names_list) do simple_names[name] = true end
+	
 	-- A generic function for adding an item to the list in the recipe pane
-
 	function add_ingredients_recursively(recipe, amount, recipe_scroll, recipes, product_to_recipe_table, depth, i, no_dup_set, side) 
 		no_dup_set[recipe.name] = true
 		i = i + 1
@@ -272,17 +275,19 @@ function show_recipe_details(recipe_name, player, side)
 			local found = { }
 			
 			-- simple item recipe should not be shown
-			local is_simple = ingredient.name == "water" or
-												 ingredient.name == "steam" or
-												 ingredient.name == "crude-oil"
+			local is_simple =  simple_names[ingredient.name]~=nil
 			if not is_simple and item ~= nil then
-			 if item.subgroup ~= nil and item.subgroup.name~="raw-resource" then
+			 if item.subgroup ~= nil and item.subgroup.name=="raw-resource" then
 			 	is_simple = true
 			 else
 			 	local item_recipe = recipes[item.name]
+			 	--log("recipe for "..item.name)
+			 	if item_recipe ~= nil then log(item_recipe.name) end
 			 	if item_recipe ~= nil and #item_recipe.ingredients == 1 then
 			 		local item_ingredient = item_recipe.ingredients[1]
-			 		if item_ingredient.subgroup ~= nil and item_ingredient.subgroup.name~="raw-resource" then
+			 		--log("single ingredient "..item_ingredient.name)
+			 		item_ingredient = game.item_prototypes[item_ingredient.name]
+			 		if item_ingredient~=nil and item_ingredient.subgroup ~= nil and item_ingredient.subgroup.name=="raw-resource" then
 			 			is_simple = true
 			 		end			 			
 			 	end
@@ -324,12 +329,19 @@ function show_recipe_details(recipe_name, player, side)
 					n = 1
 				end
 				
+				local counter = 0
+				
 				for p,r in pairs(found) do
+					if counter == 2 and depth > 1 then
+						sub_scroll.add({type="label",caption="R... ("..(n-counter)..")"}).style.left_padding = depth * tree_padding
+						break
+					end
+					counter = counter + 1
 					local p_amount = amount * get_amount(ingredient) / get_amount(p)
 					if n > 1 then
 						add_sprite_and_label(sub_scroll, r, false, nil, nil, "recipe", i, 'R: ' .. math.ceil(p_amount), side).style.left_padding = depth * tree_padding
 					end
-					i = add_ingredients_recursively(r, p_amount, sub_scroll, recipes, product_to_recipe_table, d, i, no_dup_set, side)													
+					i = add_ingredients_recursively(r, p_amount, sub_scroll, recipes, product_to_recipe_table, d, i, no_dup_set, side)																		
 				end
 			end
 		end
