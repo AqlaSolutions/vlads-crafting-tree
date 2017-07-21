@@ -173,16 +173,27 @@ function get_player_entities_set(player_index)
 	return set
 end
 
-
-function entity_built(event)
+function set_entity_built(entity, player_index)
 	if not global.player_entities_built then
 			log("global.player_entities_built is nil")
 			init()
 	end
-	get_player_entities_set(event.player_index)[event.created_entity.name] = true
+	get_player_entities_set(player_index)[entity.name] = true
 end
 
-script.on_event(defines.events.on_robot_built_entity, entity_built)
+function entity_built(event)
+	set_entity_built(event.created_entity, event.player_index)
+end
+
+function robot_entity_built(event)
+	local obj = event.robot
+	if obj == nil then obj = event.created_entity end
+	local user = nil
+	if obj == nil or obj.last_user == nil then user = 1 else user = obj.last_user end
+	set_entity_built(event.created_entity, user)
+end
+
+script.on_event(defines.events.on_robot_built_entity, robot_entity_built)
 script.on_event(defines.events.on_built_entity, entity_built)
 
 

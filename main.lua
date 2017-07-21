@@ -268,17 +268,40 @@ function show_recipe_details(recipe_name, player, side)
 			local ingredient_container = container.add{type="flow", name="wiiuf_recipe_depth_flow_"..tostring(i), direction="vertical"}
 			add_sprite_and_label(ingredient_container, ingredient, amount, nil, nil, "auto", i, nil, side).style.left_padding = (depth - 1) * tree_padding
 			i = i + 1
-			
+			local item = game.item_prototypes[ingredient.name]
 			local found = { }
+			
+			-- simple item recipe should not be shown
+			local is_simple = ingredient.name == "water" or
+												 ingredient.name == "steam" or
+												 ingredient.name == "crude-oil"
+			if not is_simple and item ~= nil then
+			 if item.subgroup ~= nil and item.subgroup.name~="raw-resource" then
+			 	is_simple = true
+			 else
+			 	local item_recipe = recipes[item.name]
+			 	if item_recipe ~= nil and #item_recipe.ingredients == 1 then
+			 		local item_ingredient = item_recipe.ingredients[1]
+			 		if item_ingredient.subgroup ~= nil and item_ingredient.subgroup.name~="raw-resource" then
+			 			is_simple = true
+			 		end			 			
+			 	end
+			 end
+			end
+			
 			local n = 0
-			if depth < 5 then
+			if depth < 5 and 
+					(depth == 1 or not is_simple) then
 				sub_scroll = ingredient_container
 				--i = i + 1
 				local n = 0
 				local recipe_candidates = product_to_recipe_table[ingredient.name]
 				if (recipe_candidates == nil) then recipe_candidates = { } end
 				for _,r in pairs(recipe_candidates) do
-					if is_normal_recipe(r.name) and not r.hidden and (no_dup_set[r.name] == nil) then						
+					if is_normal_recipe(r.name) and 
+							not r.hidden and 
+							(no_dup_set[r.name] == nil) and
+							(r.subgroup == nil or r.subgroup.name ~= "empty-barrel") then						
 						for _, p in pairs(r.products) do
 							if p.name == ingredient.name then
 								if get_amount(p) > 0 then
