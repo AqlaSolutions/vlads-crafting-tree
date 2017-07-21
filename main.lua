@@ -170,7 +170,7 @@ function identify(item, player, side, select_recipe_name)
 		end
 		setup_area("not_built", "not-built", get_not_built_available_entities(player), 
 			function(i,element,scroll)
-				scroll.add{type = "sprite", name = "wiiuf_recipe_item_sprite" .. i .. "_" .. element.item.name, sprite = "recipe/"..element.recipe.name, tooltip = element.item.localised_name}
+				scroll.add{type = "sprite", name = "wiiuf_recipe_item_sprite_new_building_" .. i .. "_" .. element.item.name, sprite = "recipe/"..element.recipe.name, tooltip = element.item.localised_name}
 			end)
 		setup_area("mined", "mined_from", mined_from)
 		setup_area("looted", "looted_from", looted_from)
@@ -281,11 +281,8 @@ function show_recipe_details(recipe_name, player, side)
 			 	is_simple = true
 			 else
 			 	local item_recipe = recipes[item.name]
-			 	--log("recipe for "..item.name)
-			 	if item_recipe ~= nil then log(item_recipe.name) end
 			 	if item_recipe ~= nil and #item_recipe.ingredients == 1 then
 			 		local item_ingredient = item_recipe.ingredients[1]
-			 		--log("single ingredient "..item_ingredient.name)
 			 		item_ingredient = game.item_prototypes[item_ingredient.name]
 			 		if item_ingredient~=nil and item_ingredient.subgroup ~= nil and item_ingredient.subgroup.name=="raw-resource" then
 			 			is_simple = true

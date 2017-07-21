@@ -9,11 +9,14 @@ function init()
 	for _ in pairs(game.fluid_prototypes) do
 		global.n_fluids = global.n_fluids +1
 	end
-	global.player_entities_built = { }
+	if global.player_entities_built == nil then	global.player_entities_built = { } end
 	for _, player in pairs(game.players) do
 	 add_top_button(player)
-	 local t = { }
-	 global.player_entities_built[player.index] = t
+	 local t = global.player_entities_built[player.index]
+	 if t == nil then
+	 	t = { }
+	 	global.player_entities_built[player.index] = t
+	 end
 	 for _,entity in pairs(Surface.find_all_entities({force=player.force})) do
 	 	if entity.last_user == nil or entity.last_user.index == player.index then
 		 t[entity.name] = true
@@ -93,13 +96,19 @@ script.on_event(defines.events.on_gui_click, function(event)
 	-- Label for recipe in list
 	elseif event.element.name:find("wiiuf_recipe_label_") then
 		show_recipe_details(event.element.name:sub(20), player)
+	elseif event.element.name:find("wiiuf_recipe_item_sprite_new_building_") then
+		local name = event.element.name:sub(("wiiuf_recipe_item_sprite_new_building_"):len()+1)
+		name = name:sub(name:find("_")+1)
+		if (event.button == defines.mouse_button_type.right) then
+			local pr = game.item_prototypes[name]
+			global.player_entities_built[player.index][pr.place_result.name] = true
+			event.element.destroy()
+		else	
+			identify(name, player)
+		end
 	-- Sprite for item in recipe view
 	elseif event.element.name:find("wiiuf_recipe_item_sprite_") then
 		identify(event.element.name:sub(26), player)
-	elseif event.element.name:find("wiiuf_recipe_item_sprite") then
-		local name = event.element.name:sub(26)
-		name = name:sub(name:find("_")+1)
-		identify(name, player)
 	-- Label for item in recipe view
 	elseif event.element.name:find("wiiuf_recipe_item_label_") then
 		identify(event.element.name:sub(25), player)
