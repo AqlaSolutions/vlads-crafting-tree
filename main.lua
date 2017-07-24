@@ -224,12 +224,13 @@ function show_recipe_details(recipe_name, player, side)
 	else
 		title_flow = main_frame.parent.wiiuf_title_flow.wiiuf_title_recipe_flow
 	end
-	
-	if title_flow.wiiuf_title_recipe_sprite then title_flow.wiiuf_title_recipe_sprite.destroy() end
-	if title_flow.wiiuf_title_recipe_label then title_flow.wiiuf_title_recipe_label.destroy() end
-	
-	title_flow.add{type = "sprite", name = "wiiuf_title_recipe_sprite", sprite = "recipe/"..recipe_name}
-	title_flow.add{type = "label", name = "wiiuf_title_recipe_label", caption = recipe.localised_name, style = "frame_caption_label_style"}
+	if title_flow then
+		if title_flow.wiiuf_title_recipe_sprite then title_flow.wiiuf_title_recipe_sprite.destroy() end
+		if title_flow.wiiuf_title_recipe_label then title_flow.wiiuf_title_recipe_label.destroy() end
+		
+		title_flow.add{type = "sprite", name = "wiiuf_title_recipe_sprite", sprite = "recipe/"..recipe_name}
+		title_flow.add{type = "label", name = "wiiuf_title_recipe_label", caption = recipe.localised_name, style = "frame_caption_label_style"}
+	end
 	
 	local body_flow = main_frame.wiiuf_body_flow
 
